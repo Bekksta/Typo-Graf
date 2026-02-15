@@ -1,0 +1,14 @@
+{
+  "name": "typo-graf",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --platform=node --target=es2017 --outfile=dist/main.js && node -e \"require('fs').mkdirSync('dist',{recursive:true});require('fs').copyFileSync('src/ui.html','dist/ui.html')\"",
+    "dev": "npm run build -- --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.118.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.2"
+  }
+}

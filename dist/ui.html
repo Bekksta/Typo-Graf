@@ -1,0 +1,46 @@
+<!-- ui.html -->
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; script-src 'unsafe-inline';"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Типограф</title>
+    <style>
+      html,body{margin:0;padding:0;font:13px/1.4 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111}
+      .wrap{padding:12px}
+      button{border:1px solid #d0d0d0;background:#fff;border-radius:6px;padding:8px 10px;cursor:pointer}
+      .muted{color:#666}
+      .row{display:flex;gap:8px;align-items:center}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="row">
+        <button id="run">Применить к выделению</button>
+        <button id="close">Закрыть</button>
+      </div>
+      <p class="muted">Обработает все текстовые узлы внутри текущего выделения.</p>
+      <div id="state" class="muted"></div>
+    </div>
+
+    <script>
+      const state = document.getElementById('state');
+      document.getElementById('run').onclick = () => {
+        parent.postMessage({ pluginMessage: { type: 'process' } }, '*');
+        state.textContent = 'Работаю…';
+      };
+      document.getElementById('close').onclick = () => {
+        parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+      };
+      onmessage = (ev) => {
+        const msg = ev.data && ev.data.pluginMessage;
+        if (!msg) return;
+        if (msg.type === 'done') state.textContent = 'Готово.';
+      };
+    </script>
+  </body>
+</html>
