@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta
@@ -7,7 +7,7 @@
       content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; script-src 'unsafe-inline';"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Типограф</title>
+    <title>Typo Graf</title>
     <style>
       html, body {
         margin: 0;
@@ -72,12 +72,12 @@
   </head>
   <body>
     <div class="wrap">
-      <h3>Типограф</h3>
-      <div class="label" id="label">Подготовка…</div>
+      <h3>Typo Graf</h3>
+      <div class="label" id="label">…</div>
       <div class="bar"><div id="bar"></div></div>
       <div class="row">
         <div class="count" id="count">0 / 0</div>
-        <button id="cancel" type="button">Отменить</button>
+        <button id="cancel" type="button">…</button>
       </div>
     </div>
 
@@ -90,22 +90,40 @@
 
         cancel.addEventListener("click", function () {
           cancel.disabled = true;
-          label.textContent = "Отменяется…";
           parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
         });
 
         window.addEventListener("message", function (ev) {
           var msg = ev.data && ev.data.pluginMessage;
           if (!msg) return;
+
+          if (msg.type === "labels") {
+            if (typeof msg.cancel === "string") cancel.textContent = msg.cancel;
+            if (typeof msg.scanning === "string") label.textContent = msg.scanning;
+            return;
+          }
+
           if (msg.type === "progress") {
             var total = msg.total || 0;
             var current = msg.current || 0;
             var pct = total > 0 ? Math.round((current / total) * 100) : 0;
             bar.style.width = pct + "%";
-            if (msg.label) label.textContent = msg.label;
+            if (typeof msg.label === "string") label.textContent = msg.label;
             count.textContent = current + " / " + total;
           }
         });
+
+        // Отправляем локаль системы при загрузке UI.
+        // Плагин ждёт это сообщение, чтобы выбрать язык нотиса.
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "init",
+              locale: navigator.language || "en",
+            },
+          },
+          "*"
+        );
       })();
     </script>
   </body>

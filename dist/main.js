@@ -26,30 +26,235 @@ function detectLanguage(text) {
   return "ru";
 }
 
-// src/lang/maps.ts
-var LANG_LABEL = {
-  ru: "\u0440\u0443\u0441\u0441\u043A\u0438\u0439",
-  en: "\u0430\u043D\u0433\u043B\u0438\u0439\u0441\u043A\u0438\u0439",
-  fr: "\u0444\u0440\u0430\u043D\u0446\u0443\u0437\u0441\u043A\u0438\u0439",
-  de: "\u043D\u0435\u043C\u0435\u0446\u043A\u0438\u0439",
-  es: "\u0438\u0441\u043F\u0430\u043D\u0441\u043A\u0438\u0439",
-  uk: "\u0443\u043A\u0440\u0430\u0438\u043D\u0441\u043A\u0438\u0439",
-  bcs: "\u0431\u043E\u0441\u043D\u0438\u0439\u0441\u043A\u043E-\u0445\u043E\u0440\u0432\u0430\u0442\u0441\u043A\u043E-\u0441\u0435\u0440\u0431\u0441\u043A\u0438\u0439"
+// src/i18n.ts
+var SUPPORTED = ["ru", "en", "fr", "uk", "de", "es", "bcs"];
+function detectUILocale(navLang) {
+  const lc = (navLang || "").toLowerCase().split(/[-_]/)[0];
+  if (lc === "ru") return "ru";
+  if (lc === "uk") return "uk";
+  if (lc === "fr") return "fr";
+  if (lc === "de") return "de";
+  if (lc === "es") return "es";
+  if (lc === "hr" || lc === "sr" || lc === "bs") return "bcs";
+  if (SUPPORTED.indexOf(lc) !== -1) return lc;
+  return "en";
+}
+var T = {
+  ru: {
+    doneStat: "\u0413\u043E\u0442\u043E\u0432\u043E.",
+    cancelledStat: "\u041E\u0442\u043C\u0435\u043D\u0435\u043D\u043E.",
+    errorStat: "\u041E\u0448\u0438\u0431\u043A\u0430: {message}.",
+    noTextLayersStat: "\u0422\u0435\u043A\u0441\u0442\u043E\u0432\u044B\u0435 \u0441\u043B\u043E\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B.",
+    languagesStat: "\u042F\u0437\u044B\u043A\u0438: {list}.",
+    changesStat: "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439: {n}.",
+    affectedStat: "\u0417\u0430\u0442\u0440\u043E\u043D\u0443\u0442\u043E \u0443\u0437\u043B\u043E\u0432: {n}.",
+    skippedFontsStat: "\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u043F\u043E \u0448\u0440\u0438\u0444\u0442\u0443: {n}.",
+    skippedLongStat: "\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u0434\u043B\u0438\u043D\u043D\u044B\u0445 \u0443\u0437\u043B\u043E\u0432: {n}.",
+    limitStat: "\u041E\u0431\u0440\u0430\u0431\u043E\u0442\u0430\u043D \u043B\u0438\u043C\u0438\u0442 {limit} \u0438\u0437 {total}.",
+    undoHint: "Ctrl/\u2318+Z \u2014 \u043E\u0442\u043C\u0435\u043D\u0438\u0442\u044C",
+    scanning: "\u0421\u043A\u0430\u043D\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\u2026",
+    processing: "\u041E\u0431\u0440\u0430\u0431\u043E\u0442\u043A\u0430\u2026",
+    cancelling: "\u041E\u0442\u043C\u0435\u043D\u0430\u2026",
+    cancelButton: "\u041E\u0442\u043C\u0435\u043D\u0438\u0442\u044C"
+  },
+  en: {
+    doneStat: "Done.",
+    cancelledStat: "Cancelled.",
+    errorStat: "Error: {message}.",
+    noTextLayersStat: "No text layers found.",
+    languagesStat: "Languages: {list}.",
+    changesStat: "Changes: {n}.",
+    affectedStat: "Affected nodes: {n}.",
+    skippedFontsStat: "Skipped (font): {n}.",
+    skippedLongStat: "Skipped (too long): {n}.",
+    limitStat: "Processed first {limit} of {total}.",
+    undoHint: "Ctrl/\u2318+Z to undo",
+    scanning: "Scanning\u2026",
+    processing: "Processing\u2026",
+    cancelling: "Cancelling\u2026",
+    cancelButton: "Cancel"
+  },
+  fr: {
+    doneStat: "Termin\xE9.",
+    cancelledStat: "Annul\xE9.",
+    errorStat: "Erreur : {message}.",
+    noTextLayersStat: "Aucun calque de texte trouv\xE9.",
+    languagesStat: "Langues : {list}.",
+    changesStat: "Modifications : {n}.",
+    affectedStat: "N\u0153uds modifi\xE9s : {n}.",
+    skippedFontsStat: "Ignor\xE9s (police) : {n}.",
+    skippedLongStat: "Ignor\xE9s (trop longs) : {n}.",
+    limitStat: "{limit} premiers trait\xE9s sur {total}.",
+    undoHint: "Ctrl/\u2318+Z pour annuler",
+    scanning: "Analyse\u2026",
+    processing: "Traitement\u2026",
+    cancelling: "Annulation\u2026",
+    cancelButton: "Annuler"
+  },
+  uk: {
+    doneStat: "\u0413\u043E\u0442\u043E\u0432\u043E.",
+    cancelledStat: "\u0421\u043A\u0430\u0441\u043E\u0432\u0430\u043D\u043E.",
+    errorStat: "\u041F\u043E\u043C\u0438\u043B\u043A\u0430: {message}.",
+    noTextLayersStat: "\u0422\u0435\u043A\u0441\u0442\u043E\u0432\u0456 \u0448\u0430\u0440\u0438 \u043D\u0435 \u0437\u043D\u0430\u0439\u0434\u0435\u043D\u043E.",
+    languagesStat: "\u041C\u043E\u0432\u0438: {list}.",
+    changesStat: "\u0417\u043C\u0456\u043D: {n}.",
+    affectedStat: "\u0417\u043C\u0456\u043D\u0435\u043D\u043E \u0432\u0443\u0437\u043B\u0456\u0432: {n}.",
+    skippedFontsStat: "\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u0437\u0430 \u0448\u0440\u0438\u0444\u0442\u043E\u043C: {n}.",
+    skippedLongStat: "\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u0437\u0430\u0434\u043E\u0432\u0433\u0438\u0445 \u0432\u0443\u0437\u043B\u0456\u0432: {n}.",
+    limitStat: "\u041E\u0431\u0440\u043E\u0431\u043B\u0435\u043D\u043E \u043F\u0435\u0440\u0448\u0456 {limit} \u0437 {total}.",
+    undoHint: "Ctrl/\u2318+Z \u2014 \u0441\u043A\u0430\u0441\u0443\u0432\u0430\u0442\u0438",
+    scanning: "\u0421\u043A\u0430\u043D\u0443\u0432\u0430\u043D\u043D\u044F\u2026",
+    processing: "\u041E\u0431\u0440\u043E\u0431\u043A\u0430\u2026",
+    cancelling: "\u0421\u043A\u0430\u0441\u0443\u0432\u0430\u043D\u043D\u044F\u2026",
+    cancelButton: "\u0421\u043A\u0430\u0441\u0443\u0432\u0430\u0442\u0438"
+  },
+  de: {
+    doneStat: "Fertig.",
+    cancelledStat: "Abgebrochen.",
+    errorStat: "Fehler: {message}.",
+    noTextLayersStat: "Keine Textebenen gefunden.",
+    languagesStat: "Sprachen: {list}.",
+    changesStat: "\xC4nderungen: {n}.",
+    affectedStat: "Betroffene Knoten: {n}.",
+    skippedFontsStat: "\xDCbersprungen (Schrift): {n}.",
+    skippedLongStat: "\xDCbersprungen (zu lang): {n}.",
+    limitStat: "{limit} von {total} verarbeitet.",
+    undoHint: "Ctrl/\u2318+Z zum R\xFCckg\xE4ngigmachen",
+    scanning: "Scannen\u2026",
+    processing: "Verarbeitung\u2026",
+    cancelling: "Abbruch\u2026",
+    cancelButton: "Abbrechen"
+  },
+  es: {
+    doneStat: "Listo.",
+    cancelledStat: "Cancelado.",
+    errorStat: "Error: {message}.",
+    noTextLayersStat: "No se encontraron capas de texto.",
+    languagesStat: "Idiomas: {list}.",
+    changesStat: "Cambios: {n}.",
+    affectedStat: "Nodos afectados: {n}.",
+    skippedFontsStat: "Omitidos (fuente): {n}.",
+    skippedLongStat: "Omitidos (demasiado largos): {n}.",
+    limitStat: "Procesados los primeros {limit} de {total}.",
+    undoHint: "Ctrl/\u2318+Z para deshacer",
+    scanning: "Escaneando\u2026",
+    processing: "Procesando\u2026",
+    cancelling: "Cancelando\u2026",
+    cancelButton: "Cancelar"
+  },
+  bcs: {
+    doneStat: "Gotovo.",
+    cancelledStat: "Otkazano.",
+    errorStat: "Gre\u0161ka: {message}.",
+    noTextLayersStat: "Tekstualni slojevi nisu prona\u0111eni.",
+    languagesStat: "Jezici: {list}.",
+    changesStat: "Izmjene: {n}.",
+    affectedStat: "Izmijenjeni \u010Dvorovi: {n}.",
+    skippedFontsStat: "Presko\u010Deno (font): {n}.",
+    skippedLongStat: "Presko\u010Deno (preduga): {n}.",
+    limitStat: "Obra\u0111eno prvih {limit} od {total}.",
+    undoHint: "Ctrl/\u2318+Z za poni\u0161tavanje",
+    scanning: "Skeniranje\u2026",
+    processing: "Obrada\u2026",
+    cancelling: "Otkazivanje\u2026",
+    cancelButton: "Otka\u017Ei"
+  }
 };
-var NNBSP = "\u202F";
+var LANG_NAMES = {
+  ru: {
+    ru: "\u0440\u0443\u0441\u0441\u043A\u0438\u0439",
+    en: "\u0430\u043D\u0433\u043B\u0438\u0439\u0441\u043A\u0438\u0439",
+    fr: "\u0444\u0440\u0430\u043D\u0446\u0443\u0437\u0441\u043A\u0438\u0439",
+    de: "\u043D\u0435\u043C\u0435\u0446\u043A\u0438\u0439",
+    es: "\u0438\u0441\u043F\u0430\u043D\u0441\u043A\u0438\u0439",
+    uk: "\u0443\u043A\u0440\u0430\u0438\u043D\u0441\u043A\u0438\u0439",
+    bcs: "BCS"
+  },
+  en: {
+    ru: "Russian",
+    en: "English",
+    fr: "French",
+    de: "German",
+    es: "Spanish",
+    uk: "Ukrainian",
+    bcs: "BCS"
+  },
+  fr: {
+    ru: "russe",
+    en: "anglais",
+    fr: "fran\xE7ais",
+    de: "allemand",
+    es: "espagnol",
+    uk: "ukrainien",
+    bcs: "BCS"
+  },
+  uk: {
+    ru: "\u0440\u043E\u0441\u0456\u0439\u0441\u044C\u043A\u0430",
+    en: "\u0430\u043D\u0433\u043B\u0456\u0439\u0441\u044C\u043A\u0430",
+    fr: "\u0444\u0440\u0430\u043D\u0446\u0443\u0437\u044C\u043A\u0430",
+    de: "\u043D\u0456\u043C\u0435\u0446\u044C\u043A\u0430",
+    es: "\u0456\u0441\u043F\u0430\u043D\u0441\u044C\u043A\u0430",
+    uk: "\u0443\u043A\u0440\u0430\u0457\u043D\u0441\u044C\u043A\u0430",
+    bcs: "BCS"
+  },
+  de: {
+    ru: "Russisch",
+    en: "Englisch",
+    fr: "Franz\xF6sisch",
+    de: "Deutsch",
+    es: "Spanisch",
+    uk: "Ukrainisch",
+    bcs: "BCS"
+  },
+  es: {
+    ru: "ruso",
+    en: "ingl\xE9s",
+    fr: "franc\xE9s",
+    de: "alem\xE1n",
+    es: "espa\xF1ol",
+    uk: "ucraniano",
+    bcs: "BCS"
+  },
+  bcs: {
+    ru: "ruski",
+    en: "engleski",
+    fr: "francuski",
+    de: "njema\u010Dki",
+    es: "\u0161panjolski",
+    uk: "ukrajinski",
+    bcs: "BCS"
+  }
+};
+function t(locale, key, params) {
+  var _a, _b;
+  let msg = (_b = (_a = T[locale]) == null ? void 0 : _a[key]) != null ? _b : T.en[key];
+  if (params) {
+    for (const k of Object.keys(params)) {
+      msg = msg.replace(`{${k}}`, String(params[k]));
+    }
+  }
+  return msg;
+}
+function langName(uiLocale2, lang) {
+  var _a, _b, _c;
+  return (_c = (_b = (_a = LANG_NAMES[uiLocale2]) == null ? void 0 : _a[lang]) != null ? _b : LANG_NAMES.en[lang]) != null ? _c : lang;
+}
+
+// src/lang/maps.ts
 var NBSP = "\xA0";
+var NNBSP = "\u202F";
 var NBH = "\u2011";
 var EN_DASH = "\u2013";
 var EM_DASH = "\u2014";
 var ELLIPSIS = "\u2026";
-var SP_ANY_CLASS = /[ \u00A0\u2009\u202F\t]/;
-var SP_ANY_SRC = "[ \\u00A0\\u2009\\u202F\\t]";
 var PRIME = "\u2032";
 var DBL_PRM = "\u2033";
 var L_DQ = "\u201C";
 var R_DQ = "\u201D";
 var L_SQ = "\u2018";
 var R_SQ = "\u2019";
+var SP_ANY_CLASS = /[    \t]/;
+var SP_ANY_SRC = "[ \\u00A0\\u2009\\u202F\\t]";
 
 // src/rules/common.ts
 var WJ = "\u2060";
@@ -998,13 +1203,13 @@ function formatLeadingCurrency(text) {
   });
 }
 function tightenUnitsAndPercentsEn(text) {
-  let t = text;
-  t = formatLeadingCurrency(t);
-  t = t.replace(US_THOUSANDS_RE, "$1,$2");
-  t = t.replace(PERCENT_RE, (_m, n) => `${n}${NBSP}%`);
-  t = t.replace(UNIT_RE, (_m, n, u) => `${n}${NBSP}${u}`);
-  t = t.replace(TRAILING_CURRENCY_RE, (_m, n, sym) => `${n}${NBSP}${sym}`);
-  return t;
+  let t2 = text;
+  t2 = formatLeadingCurrency(t2);
+  t2 = t2.replace(US_THOUSANDS_RE, "$1,$2");
+  t2 = t2.replace(PERCENT_RE, (_m, n) => `${n}${NBSP}%`);
+  t2 = t2.replace(UNIT_RE, (_m, n, u) => `${n}${NBSP}${u}`);
+  t2 = t2.replace(TRAILING_CURRENCY_RE, (_m, n, sym) => `${n}${NBSP}${sym}`);
+  return t2;
 }
 var RANGE_RE = /\b(\d+)\s*-\s*(\d+)\b/g;
 function normalizeRangesEn(text) {
@@ -1021,14 +1226,14 @@ function gluePrepsAndConjs(text) {
   return text.replace(SERVICE_RE, (_m, w) => w + NBSP);
 }
 function applyEnglishRules(input) {
-  let t = input;
-  t = normalizePrimes(t);
-  t = smartQuotesEn(t);
-  t = normalizeEmDashEn(t);
-  t = normalizeRangesEn(t);
-  t = tightenUnitsAndPercentsEn(t);
-  t = gluePrepsAndConjs(t);
-  return t;
+  let t2 = input;
+  t2 = normalizePrimes(t2);
+  t2 = smartQuotesEn(t2);
+  t2 = normalizeEmDashEn(t2);
+  t2 = normalizeRangesEn(t2);
+  t2 = tightenUnitsAndPercentsEn(t2);
+  t2 = gluePrepsAndConjs(t2);
+  return t2;
 }
 
 // src/rules/shared.ts
@@ -1143,13 +1348,13 @@ function narrowNbspBeforePunct(text) {
   return text.replace(PUNCT_BEFORE_RE, (_m, p) => NNBSP + p);
 }
 function applyFrenchRules(input) {
-  let t = input;
-  t = placeGuillemets(t);
-  t = tightenGuillemets(t);
-  t = narrowNbspBeforePunct(t);
-  t = tightenUnitsFr(t);
-  t = t.replace(new RegExp(`(\\d)${NBSP}`, "g"), `$1${NNBSP}`);
-  return t;
+  let t2 = input;
+  t2 = placeGuillemets(t2);
+  t2 = tightenGuillemets(t2);
+  t2 = narrowNbspBeforePunct(t2);
+  t2 = tightenUnitsFr(t2);
+  t2 = t2.replace(new RegExp(`(\\d)${NBSP}`, "g"), `$1${NNBSP}`);
+  return t2;
 }
 
 // src/rules/uk.ts
@@ -1164,11 +1369,11 @@ var TOKEN_NUM_RE = new RegExp(
 );
 var QUOTE_NORMALIZE_RE = /[“”„‟]/g;
 function placeGuillemetsUk(text) {
-  let t = text.replace(QUOTE_NORMALIZE_RE, '"');
+  let t2 = text.replace(QUOTE_NORMALIZE_RE, '"');
   let out = "";
   let open = true;
-  for (let i = 0; i < t.length; i++) {
-    const ch = t[i];
+  for (let i = 0; i < t2.length; i++) {
+    const ch = t2[i];
     if (ch === '"') {
       out += open ? "\xAB" : "\xBB";
       open = !open;
@@ -1179,14 +1384,14 @@ function placeGuillemetsUk(text) {
   return out;
 }
 function applyUkrainianRules(input) {
-  let t = input;
-  t = placeGuillemetsUk(t);
-  t = t.replace(SHORT_PREP_RE, (_m, w) => w + NBSP);
-  t = t.replace(TOKEN_NUM_RE, (_m, tok) => tok + NNBSP);
-  t = t.replace(UNIT_RE3, (m, n) => {
+  let t2 = input;
+  t2 = placeGuillemetsUk(t2);
+  t2 = t2.replace(SHORT_PREP_RE, (_m, w) => w + NBSP);
+  t2 = t2.replace(TOKEN_NUM_RE, (_m, tok) => tok + NNBSP);
+  t2 = t2.replace(UNIT_RE3, (m, n) => {
     return n + NNBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-  return t;
+  return t2;
 }
 
 // src/rules/de.ts
@@ -1194,11 +1399,11 @@ var UNIT_RE4 = makeNumberUnitRegex(NUM_UNIT.eu);
 var ASCII_QUOTE_NORMALIZE_RE = /[”‟]/g;
 function placeGermanQuotes(text) {
   if (/[»«]/.test(text)) return text;
-  let t = text.replace(ASCII_QUOTE_NORMALIZE_RE, '"');
+  let t2 = text.replace(ASCII_QUOTE_NORMALIZE_RE, '"');
   let out = "";
   let open = true;
-  for (let i = 0; i < t.length; i++) {
-    const ch = t[i];
+  for (let i = 0; i < t2.length; i++) {
+    const ch = t2[i];
     if (ch === '"') {
       out += open ? "\u201E" : "\u201C";
       open = !open;
@@ -1209,12 +1414,12 @@ function placeGermanQuotes(text) {
   return out;
 }
 function applyGermanRules(input) {
-  let t = input;
-  t = placeGermanQuotes(t);
-  t = t.replace(UNIT_RE4, (m, n) => {
+  let t2 = input;
+  t2 = placeGermanQuotes(t2);
+  t2 = t2.replace(UNIT_RE4, (m, n) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-  return t;
+  return t2;
 }
 
 // src/rules/es.ts
@@ -1222,11 +1427,11 @@ var UNIT_RE5 = makeNumberUnitRegex(NUM_UNIT.eu);
 var ASCII_QUOTE_NORMALIZE_RE2 = /[„‟]/g;
 function placeSpanishQuotes(text) {
   if (/[«»]/.test(text)) return text;
-  let t = text.replace(ASCII_QUOTE_NORMALIZE_RE2, '"');
+  let t2 = text.replace(ASCII_QUOTE_NORMALIZE_RE2, '"');
   let out = "";
   let open = true;
-  for (let i = 0; i < t.length; i++) {
-    const ch = t[i];
+  for (let i = 0; i < t2.length; i++) {
+    const ch = t2[i];
     if (ch === '"') {
       out += open ? L_DQ : R_DQ;
       open = !open;
@@ -1237,12 +1442,12 @@ function placeSpanishQuotes(text) {
   return out;
 }
 function applySpanishRules(input) {
-  let t = input;
-  t = placeSpanishQuotes(t);
-  t = t.replace(UNIT_RE5, (m, n) => {
+  let t2 = input;
+  t2 = placeSpanishQuotes(t2);
+  t2 = t2.replace(UNIT_RE5, (m, n) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-  return t;
+  return t2;
 }
 
 // src/rules/bcs.ts
@@ -1264,12 +1469,12 @@ function placeBCSQuotes(text) {
   return out;
 }
 function applyBCSRules(input) {
-  let t = input;
-  t = placeBCSQuotes(t);
-  t = t.replace(UNIT_RE6, (m, n) => {
+  let t2 = input;
+  t2 = placeBCSQuotes(t2);
+  t2 = t2.replace(UNIT_RE6, (m, n) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-  return t;
+  return t2;
 }
 
 // src/text/mask.ts
@@ -1397,7 +1602,8 @@ var MAX_NODES = 2e3;
 var BATCH_SIZE = 150;
 var PIPELINE_MAX_PASSES = 3;
 var MAX_SEGMENT_LENGTH = 5e3;
-var NOOP = (t) => t;
+var INIT_TIMEOUT_MS = 1500;
+var NOOP = (s) => s;
 function getLangProcessor(lang) {
   switch (lang) {
     case "ru":
@@ -1455,11 +1661,11 @@ function transformSegment(text, lang) {
   const langProc = getLangProcessor(lang);
   let prev = text;
   for (let i = 0; i < PIPELINE_MAX_PASSES; i++) {
-    let t = applyMath(prev);
-    t = applyCommonRules(t);
-    t = langProc(t);
-    if (t === prev) return t;
-    prev = t;
+    let s = applyMath(prev);
+    s = applyCommonRules(s);
+    s = langProc(s);
+    if (s === prev) return s;
+    prev = s;
   }
   return prev;
 }
@@ -1486,30 +1692,54 @@ function planReplacements(before, lang) {
 function yieldControl() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
-function formatLangStats(stats) {
-  if (!stats.size) return "\u2014";
+function formatLangList(uiLocale2, stats) {
   const sorted = Array.from(stats.entries()).sort((a, b) => b[1] - a[1]);
-  return sorted.map(([lang]) => {
-    var _a;
-    return (_a = LANG_LABEL[lang]) != null ? _a : lang;
-  }).join(", ");
+  return sorted.map(([lang]) => langName(uiLocale2, lang)).join(", ");
 }
 function postProgress(current, total, label) {
   figma.ui.postMessage({ type: "progress", current, total, label });
 }
+var uiLocale = "en";
+var cancelled = false;
+var initResolve = null;
+figma.ui.onmessage = (msg) => {
+  if (!msg) return;
+  if (msg.type === "init") {
+    uiLocale = detectUILocale(msg.locale);
+    if (initResolve) {
+      initResolve();
+      initResolve = null;
+    }
+  } else if (msg.type === "cancel") {
+    cancelled = true;
+  }
+};
+function waitForInit(timeoutMs) {
+  return new Promise((resolve) => {
+    initResolve = resolve;
+    setTimeout(() => {
+      if (initResolve) {
+        initResolve();
+        initResolve = null;
+      }
+    }, timeoutMs);
+  });
+}
 async function run() {
   var _a;
+  await waitForInit(INIT_TIMEOUT_MS);
+  figma.ui.postMessage({
+    type: "labels",
+    cancel: t(uiLocale, "cancelButton"),
+    scanning: t(uiLocale, "scanning")
+  });
   const allNodes = collectTargets();
   if (!allNodes.length) {
-    return "\u0422\u0435\u043A\u0441\u0442\u043E\u0432\u044B\u0435 \u0441\u043B\u043E\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B";
+    return t(uiLocale, "noTextLayersStat");
   }
   const nodes = allNodes.slice(0, MAX_NODES);
   const truncated = allNodes.length > MAX_NODES;
-  postProgress(0, nodes.length, "\u0421\u043A\u0430\u043D\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\u2026");
-  let cancelled = false;
-  figma.ui.onmessage = (msg) => {
-    if (msg && msg.type === "cancel") cancelled = true;
-  };
+  postProgress(0, nodes.length, t(uiLocale, "scanning"));
   let totalChanges = 0;
   let affectedNodes = 0;
   let skippedFonts = 0;
@@ -1522,6 +1752,10 @@ async function run() {
       if (cancelled) break;
       const before = node.characters;
       if (!before) continue;
+      if (before.length > MAX_SEGMENT_LENGTH) {
+        skippedTooLong++;
+        continue;
+      }
       const lang = detectLanguage(before);
       langStats.set(lang, ((_a = langStats.get(lang)) != null ? _a : 0) + 1);
       const replacements = planReplacements(before, lang);
@@ -1544,28 +1778,35 @@ async function run() {
       }
     }
     const processed = Math.min(i + BATCH_SIZE, nodes.length);
-    postProgress(processed, nodes.length, cancelled ? "\u041E\u0442\u043C\u0435\u043D\u0430\u2026" : "\u041E\u0431\u0440\u0430\u0431\u043E\u0442\u043A\u0430\u2026");
+    postProgress(
+      processed,
+      nodes.length,
+      t(uiLocale, cancelled ? "cancelling" : "processing")
+    );
     await yieldControl();
   }
-  const langLabel = formatLangStats(langStats);
-  const parts = [];
-  parts.push(cancelled ? "\u041E\u0442\u043C\u0435\u043D\u0435\u043D\u043E" : "\u0413\u043E\u0442\u043E\u0432\u043E");
-  parts.push(`\u044F\u0437\u044B\u043A\u0438: ${langLabel}`);
-  parts.push(`\u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439: ${totalChanges}`);
-  parts.push(`\u0437\u0430\u0442\u0440\u043E\u043D\u0443\u0442\u043E \u0443\u0437\u043B\u043E\u0432: ${affectedNodes}`);
-  if (skippedFonts) parts.push(`\u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u043F\u043E \u0448\u0440\u0438\u0444\u0442\u0443: ${skippedFonts}`);
-  if (skippedTooLong) parts.push(`\u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u0434\u043B\u0438\u043D\u043D\u044B\u0445: ${skippedTooLong}`);
-  if (truncated) parts.push(`\u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0430\u043D \u043B\u0438\u043C\u0438\u0442 ${MAX_NODES} \u0438\u0437 ${allNodes.length}`);
-  parts.push("Ctrl/\u2318+Z \u2014 \u043E\u0442\u043C\u0435\u043D\u0438\u0442\u044C");
-  return parts.join(" \xB7 ");
+  const stats = [];
+  stats.push(t(uiLocale, cancelled ? "cancelledStat" : "doneStat"));
+  if (langStats.size) {
+    stats.push(t(uiLocale, "languagesStat", { list: formatLangList(uiLocale, langStats) }));
+  }
+  stats.push(t(uiLocale, "changesStat", { n: totalChanges }));
+  stats.push(t(uiLocale, "affectedStat", { n: affectedNodes }));
+  if (skippedFonts) stats.push(t(uiLocale, "skippedFontsStat", { n: skippedFonts }));
+  if (skippedTooLong) stats.push(t(uiLocale, "skippedLongStat", { n: skippedTooLong }));
+  if (truncated) {
+    stats.push(t(uiLocale, "limitStat", { limit: MAX_NODES, total: allNodes.length }));
+  }
+  return stats.join(" ") + "\n" + t(uiLocale, "undoHint");
 }
 figma.showUI(__html__, { width: 320, height: 160, themeColors: true });
 figma.on("run", async () => {
-  let result = "\u0413\u043E\u0442\u043E\u0432\u043E";
+  let result = "";
   try {
     result = await run();
   } catch (e) {
-    result = "\u041E\u0448\u0438\u0431\u043A\u0430: " + (e instanceof Error ? e.message : String(e));
+    const msgText = e instanceof Error ? e.message : String(e);
+    result = t(uiLocale, "errorStat", { message: msgText });
   } finally {
     figma.closePlugin(result);
   }

@@ -1,6 +1,6 @@
 import { detectLanguage } from "./lang/detect";
-import { LANG_LABEL } from "./lang/maps";
 import { Language, Replacement } from "./types";
+import { detectUILocale, langName, t, UILocale } from "./i18n";
 
 import { applyCommonRules } from "./rules/common";
 import { applyMath } from "./rules/math";
@@ -22,9 +22,11 @@ const PIPELINE_MAX_PASSES = 3;
 // LCS-таблица — O(n²) по памяти. На один свободный сегмент ставим лимит,
 // очень длинные узлы (макет с целым параграфом текста) — пропускаем целиком.
 const MAX_SEGMENT_LENGTH = 5000;
+// Сколько ждём init-сообщение от UI до фолбэка на 'en'.
+const INIT_TIMEOUT_MS = 1500;
 
 type LangProcessor = (text: string) => string;
-const NOOP: LangProcessor = (t) => t;
+const NOOP: LangProcessor = (s) => s;
 
 function getLangProcessor(lang: Language): LangProcessor {
   switch (lang) {
@@ -89,24 +91,16 @@ function transformSegment(text: string, lang: Language): string {
   const langProc = getLangProcessor(lang);
   let prev = text;
   for (let i = 0; i < PIPELINE_MAX_PASSES; i++) {
-    let t = applyMath(prev);
-    t = applyCommonRules(t);
-    t = langProc(t);
-    if (t === prev) return t;
-    prev = t;
+    let s = applyMath(prev);
+    s = applyCommonRules(s);
+    s = langProc(s);
+    if (s === prev) return s;
+    prev = s;
   }
   return prev;
 }
 
-/**
- * Считает replacements для узла: маскирует URL/email, разбивает на свободные
- * сегменты, применяет правила в каждом изолированно, склеивает в общий список.
- * Возвращает null, если узел слишком велик для безопасной обработки.
- */
-function planReplacements(
-  before: string,
-  lang: Language
-): Replacement[] | null {
+function planReplacements(before: string, lang: Language): Replacement[] | null {
   const { masked, masks } = maskSensitive(before);
   const segments = extractFreeSegments(masked, masks);
 
@@ -132,31 +126,64 @@ function yieldControl(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-function formatLangStats(stats: Map<Language, number>): string {
-  if (!stats.size) return "—";
+function formatLangList(uiLocale: UILocale, stats: Map<Language, number>): string {
   const sorted = Array.from(stats.entries()).sort((a, b) => b[1] - a[1]);
-  return sorted.map(([lang]) => LANG_LABEL[lang] ?? lang).join(", ");
+  return sorted.map(([lang]) => langName(uiLocale, lang)).join(", ");
 }
 
 function postProgress(current: number, total: number, label: string) {
   figma.ui.postMessage({ type: "progress", current, total, label });
 }
 
+// ─── Состояние, разделяемое между обработчиком UI и run() ──────────────────
+let uiLocale: UILocale = "en";
+let cancelled = false;
+let initResolve: (() => void) | null = null;
+
+figma.ui.onmessage = (msg) => {
+  if (!msg) return;
+  if (msg.type === "init") {
+    uiLocale = detectUILocale(msg.locale);
+    if (initResolve) {
+      initResolve();
+      initResolve = null;
+    }
+  } else if (msg.type === "cancel") {
+    cancelled = true;
+  }
+};
+
+function waitForInit(timeoutMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    initResolve = resolve;
+    setTimeout(() => {
+      if (initResolve) {
+        initResolve();
+        initResolve = null;
+      }
+    }, timeoutMs);
+  });
+}
+
 async function run(): Promise<string> {
+  await waitForInit(INIT_TIMEOUT_MS);
+
+  // После получения локали — переводим стартовые лейблы UI.
+  figma.ui.postMessage({
+    type: "labels",
+    cancel: t(uiLocale, "cancelButton"),
+    scanning: t(uiLocale, "scanning"),
+  });
+
   const allNodes = collectTargets();
   if (!allNodes.length) {
-    return "Текстовые слои не найдены";
+    return t(uiLocale, "noTextLayersStat");
   }
 
   const nodes = allNodes.slice(0, MAX_NODES);
   const truncated = allNodes.length > MAX_NODES;
 
-  postProgress(0, nodes.length, "Сканирование…");
-
-  let cancelled = false;
-  figma.ui.onmessage = (msg) => {
-    if (msg && msg.type === "cancel") cancelled = true;
-  };
+  postProgress(0, nodes.length, t(uiLocale, "scanning"));
 
   let totalChanges = 0;
   let affectedNodes = 0;
@@ -174,6 +201,10 @@ async function run(): Promise<string> {
 
       const before = node.characters;
       if (!before) continue;
+      if (before.length > MAX_SEGMENT_LENGTH) {
+        skippedTooLong++;
+        continue;
+      }
 
       const lang = detectLanguage(before);
       langStats.set(lang, (langStats.get(lang) ?? 0) + 1);
@@ -201,32 +232,41 @@ async function run(): Promise<string> {
     }
 
     const processed = Math.min(i + BATCH_SIZE, nodes.length);
-    postProgress(processed, nodes.length, cancelled ? "Отмена…" : "Обработка…");
+    postProgress(
+      processed,
+      nodes.length,
+      t(uiLocale, cancelled ? "cancelling" : "processing")
+    );
     await yieldControl();
   }
 
-  const langLabel = formatLangStats(langStats);
-  const parts: string[] = [];
-  parts.push(cancelled ? "Отменено" : "Готово");
-  parts.push(`языки: ${langLabel}`);
-  parts.push(`изменений: ${totalChanges}`);
-  parts.push(`затронуто узлов: ${affectedNodes}`);
-  if (skippedFonts) parts.push(`пропущено по шрифту: ${skippedFonts}`);
-  if (skippedTooLong) parts.push(`пропущено длинных: ${skippedTooLong}`);
-  if (truncated) parts.push(`обработан лимит ${MAX_NODES} из ${allNodes.length}`);
-  parts.push("Ctrl/⌘+Z — отменить");
+  // Каждое предложение — отдельное, разделитель — пробел.
+  // Подсказка про Ctrl+Z — на новой строке.
+  const stats: string[] = [];
+  stats.push(t(uiLocale, cancelled ? "cancelledStat" : "doneStat"));
+  if (langStats.size) {
+    stats.push(t(uiLocale, "languagesStat", { list: formatLangList(uiLocale, langStats) }));
+  }
+  stats.push(t(uiLocale, "changesStat", { n: totalChanges }));
+  stats.push(t(uiLocale, "affectedStat", { n: affectedNodes }));
+  if (skippedFonts) stats.push(t(uiLocale, "skippedFontsStat", { n: skippedFonts }));
+  if (skippedTooLong) stats.push(t(uiLocale, "skippedLongStat", { n: skippedTooLong }));
+  if (truncated) {
+    stats.push(t(uiLocale, "limitStat", { limit: MAX_NODES, total: allNodes.length }));
+  }
 
-  return parts.join(" · ");
+  return stats.join(" ") + "\n" + t(uiLocale, "undoHint");
 }
 
 figma.showUI(__html__, { width: 320, height: 160, themeColors: true });
 
 figma.on("run", async () => {
-  let result = "Готово";
+  let result = "";
   try {
     result = await run();
   } catch (e) {
-    result = "Ошибка: " + (e instanceof Error ? e.message : String(e));
+    const msgText = e instanceof Error ? e.message : String(e);
+    result = t(uiLocale, "errorStat", { message: msgText });
   } finally {
     figma.closePlugin(result);
   }
