@@ -1,22 +1,35 @@
-import { Replacement } from "../types";
-import { NBSP } from "../lang/maps";
+// rules/bcs.ts — bs/hr/sr латиница (ТЗ §3.8)
+// - Кавычки „…" или «…» — нормализуем по встреченному варианту
+//   (если есть «…» — оставляем; если „…" — оставляем; иначе по умолчанию „…")
+// - Число + единица/валюта/% → NBSP
+import { NBSP, SP_ANY_SRC } from "../lang/maps";
 import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
-// Bosnian/Croatian/Serbian (Latin)
-export function rulesBCS(text: string): Replacement[] {
-  const reps: Replacement[] = [];
-  const RE = makeNumberUnitRegex(NUM_UNIT.bcs);
+const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
 
-  text.replace(RE, (m, n, unit, offset) => {
-    const start = offset + String(n).length;
-    reps.push({
-      start,
-      end: start + 1,
-      text: NBSP,
-      reason: "bcs nbsp number+unit",
-    });
-    return m;
+function placeBCSQuotes(text: string): string {
+  if (/[«»]/.test(text)) return text;
+  if (/[„“]/.test(text)) return text;
+
+  let out = "";
+  let open = true;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      out += open ? "„" : "“";
+      open = !open;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+export function applyBCSRules(input: string): string {
+  let t = input;
+  t = placeBCSQuotes(t);
+  t = t.replace(UNIT_RE, (m, n: string) => {
+    return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-
-  return reps;
+  return t;
 }

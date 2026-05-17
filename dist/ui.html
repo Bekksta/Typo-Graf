@@ -1,4 +1,3 @@
-<!-- ui.html -->
 <!doctype html>
 <html lang="ru">
   <head>
@@ -10,37 +9,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Типограф</title>
     <style>
-      html,body{margin:0;padding:0;font:13px/1.4 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111}
-      .wrap{padding:12px}
-      button{border:1px solid #d0d0d0;background:#fff;border-radius:6px;padding:8px 10px;cursor:pointer}
-      .muted{color:#666}
-      .row{display:flex;gap:8px;align-items:center}
+      html, body {
+        margin: 0;
+        padding: 0;
+        font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #1a1a1a;
+        background: #fff;
+      }
+      .wrap { padding: 14px; }
+      h3 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.1px;
+      }
+      .label {
+        color: #555;
+        margin-bottom: 8px;
+        min-height: 16px;
+        font-size: 12px;
+      }
+      .bar {
+        height: 6px;
+        background: #ececec;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 12px;
+      }
+      .bar > div {
+        height: 100%;
+        background: #18a0fb;
+        transition: width 120ms ease;
+        width: 0%;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+      .count {
+        color: #555;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+      button {
+        border: 1px solid #d0d0d0;
+        background: #fff;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font: inherit;
+        color: #1a1a1a;
+      }
+      button:hover { background: #f5f5f5; }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+        background: #fff;
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
+      <h3>Типограф</h3>
+      <div class="label" id="label">Подготовка…</div>
+      <div class="bar"><div id="bar"></div></div>
       <div class="row">
-        <button id="run">Применить к выделению</button>
-        <button id="close">Закрыть</button>
+        <div class="count" id="count">0 / 0</div>
+        <button id="cancel" type="button">Отменить</button>
       </div>
-      <p class="muted">Обработает все текстовые узлы внутри текущего выделения.</p>
-      <div id="state" class="muted"></div>
     </div>
 
     <script>
-      const state = document.getElementById('state');
-      document.getElementById('run').onclick = () => {
-        parent.postMessage({ pluginMessage: { type: 'process' } }, '*');
-        state.textContent = 'Работаю…';
-      };
-      document.getElementById('close').onclick = () => {
-        parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
-      };
-      onmessage = (ev) => {
-        const msg = ev.data && ev.data.pluginMessage;
-        if (!msg) return;
-        if (msg.type === 'done') state.textContent = 'Готово.';
-      };
+      (function () {
+        var bar = document.getElementById("bar");
+        var label = document.getElementById("label");
+        var count = document.getElementById("count");
+        var cancel = document.getElementById("cancel");
+
+        cancel.addEventListener("click", function () {
+          cancel.disabled = true;
+          label.textContent = "Отменяется…";
+          parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+        });
+
+        window.addEventListener("message", function (ev) {
+          var msg = ev.data && ev.data.pluginMessage;
+          if (!msg) return;
+          if (msg.type === "progress") {
+            var total = msg.total || 0;
+            var current = msg.current || 0;
+            var pct = total > 0 ? Math.round((current / total) * 100) : 0;
+            bar.style.width = pct + "%";
+            if (msg.label) label.textContent = msg.label;
+            count.textContent = current + " / " + total;
+          }
+        });
+      })();
     </script>
   </body>
 </html>

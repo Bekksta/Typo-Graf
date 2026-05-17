@@ -1,78 +1,52 @@
-// Общие правила + маскирование URL/email. Только NBSP (U+00A0).
-import { NBSP, EN_DASH, ELLIPSIS } from "../lang/maps";
+// Общие типографические правила (порядок важен).
+// Маскирование URL/email вынесено в src/text/mask.ts (length-preserving),
+// чтобы LCS-diff работал на равных индексах.
+import { NBSP, EN_DASH, ELLIPSIS, SP_ANY_SRC } from "../lang/maps";
 
-export type Replacement = {
-  start: number;
-  end: number;
-  text: string;
-  reason?: string;
-};
+const WJ = "⁠";
 
+// Базовый набор единиц для number+unit; языковые правила могут расширять.
+const COMMON_UNITS_RE = new RegExp(
+  `(\\d+)${SP_ANY_SRC}+(кг|г|см|мм|мг|м|л|км|т|мл|млн|тыс\\.?|₽|€|\\$|%|ч\\.?|мин\\.?|сек\\.?)(?![A-Za-zА-Яа-яЁё])`,
+  "g"
+);
 
-// ---- маскирование URL/Email фикс. длиной ----
-const PUA_BASE = 0xe000;
-const MASK_LEN = 10;
-const MASK_TOKEN = String.fromCharCode(PUA_BASE) + "x".repeat(MASK_LEN - 1);
+const ELLIPSIS_UNITS_RE = new RegExp(
+  `…${SP_ANY_SRC}+(см\\.?|мм|м|км|г|кг|л|%|₽|€|\\$)`,
+  "g"
+);
 
-type MaskPart = { raw: string };
+const DOUBLE_PRIME_RE = new RegExp(`(\\d)${SP_ANY_SRC}*''(?!')`, "g");
+const SINGLE_PRIME_RE = new RegExp(`(\\d)${SP_ANY_SRC}*'(?!')`, "g");
+const DEG_RE = /\b(\d+)\s*deg\b/gi;
 
-const URL_RE = /\bhttps?:\/\/[^\s]+/gi;
-const EMAIL_RE = /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi;
+const ELLIPSIS_COMPACT_RE = /\s*\.{3}\s*/g;
+const ELLIPSIS_TRIM_LEFT_RE = /\s+…/g;
+const ELLIPSIS_SPACE_RIGHT_RE = /…(?=[A-Za-zА-Яа-яЁё0-9])/g;
+const PERCENT_SPACE_RE = /(\d)\s+%/g;
+const PERCENT_ELLIPSIS_RE = /%\s*…/g;
+const NUM_RANGE_RE = /(\d+)\s*-\s*(\d+)/g;
+const DOUBLE_SP_RE = / {2,}/g;
 
-export function maskUrlsAndEmails(input: string) {
-  const parts: MaskPart[] = [];
-  let masked = input.replace(URL_RE, (m) => {
-    parts.push({ raw: m });
-    return MASK_TOKEN;
-  });
-  masked = masked.replace(EMAIL_RE, (m) => {
-    parts.push({ raw: m });
-    return MASK_TOKEN;
-  });
-  return { masked, parts };
-}
-export function unmaskUrlsAndEmails(text: string, parts: MaskPart[]) {
-  if (!parts.length) return text;
-  let i = 0;
-  return text.replace(new RegExp(MASK_TOKEN, "g"), () => parts[i++]?.raw ?? "");
-}
-
-// ---- общие правила (порядок важен) ----
-export function applyCommonRules(input: string) {
-  const replacements: Replacement[] = [];
+export function applyCommonRules(input: string): string {
   let text = input;
 
-  // … твои текущие common-замены …
-  text = text.replace(/\s*\.{3}\s*/g, ELLIPSIS)
-             .replace(/\s+…/g, ELLIPSIS)
-             .replace(/…(?=[A-Za-zА-Яа-яЁё0-9])/g, ELLIPSIS + " ");
+  text = text
+    .replace(ELLIPSIS_COMPACT_RE, ELLIPSIS)
+    .replace(ELLIPSIS_TRIM_LEFT_RE, ELLIPSIS)
+    .replace(ELLIPSIS_SPACE_RIGHT_RE, ELLIPSIS + " ");
 
-  text = text.replace(/(\d)\s+%/g, (_m, d) => `${d}%`);
-  const WJ = "\u2060";
-  text = text.replace(/%\s*…/g, "%" + WJ + ELLIPSIS);
+  text = text.replace(PERCENT_SPACE_RE, "$1%");
+  text = text.replace(PERCENT_ELLIPSIS_RE, "%" + WJ + ELLIPSIS);
 
-  // диапазоны цифр -> en dash
-  text = text.replace(/(\d+)\s*-\s*(\d+)/g, (_m, a, b) => `${a}${EN_DASH}${b}`);
+  text = text.replace(NUM_RANGE_RE, `$1${EN_DASH}$2`);
+  text = text.replace(DOUBLE_SP_RE, " ");
+  text = text.replace(COMMON_UNITS_RE, (_m, n, u) => `${n}${NBSP}${u}`);
+  text = text.replace(ELLIPSIS_UNITS_RE, (_m, u) => `${ELLIPSIS}${NBSP}${u}`);
 
-  // схлопывание множественных пробелов
-  text = text.replace(/ {2,}/g, " ");
+  text = text.replace(DOUBLE_PRIME_RE, "$1″");
+  text = text.replace(SINGLE_PRIME_RE, "$1′");
+  text = text.replace(DEG_RE, "$1°");
 
-  // --- сюда переносим "tightenUnitsAndPercents" + праймы/deg ---
-  // единицы/валюта/время: 12 кг, 20 ч., 50%
-  text = text.replace(
-    /(\d+)[ \u00A0\u2009\u202F\t]+(кг|г|см|мм|мг|м|л|км|т|мл|млн|тыс\.?|₽|€|\$|%|ч\.?|мин\.?|сек\.?)(?![A-Za-zА-Яа-яЁё])/g,
-    (_m, n, u) => `${n}${NBSP}${u}`
-  );
-  // … + после многоточия узкий пробел к единице
-  text = text.replace(/…\s+(см\.?|мм|м|км|г|кг|л|%|₽|€|\$)/g, (_m, u) => `\u2026${NBSP}${u}`);
-
-  // праймы (минуты/секунды дуги, футы/дюймы) — ДОЛЖНЫ быть до smartQuotesRu
-  const SP_ANY = "[ \\u00A0\\u2009\\u202F\\t]*";
-  text = text.replace(new RegExp(`(\\d)${SP_ANY}''(?!')`, "g"), "$1\u2033"); // ″
-  text = text.replace(new RegExp(`(\\d)${SP_ANY}'(?!')`,  "g"), "$1\u2032"); // ′
-
-  // градусы: только число + deg
-  text = text.replace(/\b(\d+)\s*deg\b/gi, "$1\u00B0"); // °
-
-  return { text, replacements };
+  return text;
 }

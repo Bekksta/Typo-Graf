@@ -7,6 +7,7 @@ import {
 } from "../lib/ruLib";
 import { NBSP, NBH, SP_ANY_CLASS, SP_ANY_SRC, EM_DASH } from "../lang/maps";
 import { preserveCase } from "../lib/commonCase";
+import { applyYoFix } from "./yoPairs";
 
 // 5.1 Короткие предлоги/частицы → NBSP после
 export function glueShortPreps(text: string): string {
@@ -95,7 +96,7 @@ export function nbspAfterAbbr(text: string): string {
     (
       m: string,
       unit: string | undefined,
-      generic: string | undefined,
+      _generic: string | undefined,
       off: number
     ) => {
       let i = off + m.length;
@@ -215,6 +216,7 @@ export function applyRussianRules(input: string): string {
   text = fixHyphenatedAbbr(text); // 5.5
   text = glueParticles(text); // 5.7
   text = removeSpacesBeforePunctuation(text); // 5.9
+  text = applyYoFix(text); // ТЗ §3.2.2 — ёфикация по белому списку
 
   return text;
 }

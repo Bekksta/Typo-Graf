@@ -39,7 +39,7 @@ function applyMathPowers(text: string): string {
 
   // base^token (буквы/цифры/знаки, без скобок)
   out = out.replace(
-    /(\S)\s*\^\s*([A-Za-zА-Яа-яЁё0-9+\-−]+)/g,
+    /(\S)\s*\^\s*([A-Za-zА-яЁё0-9+\-−]+)/g,
     (_m, base: string, token: string) =>
       base + toSuperscriptAll(asciiMinusToUnicode(token))
   );
@@ -65,7 +65,7 @@ function applyMathSubscripts(text: string): string {
 
   // Короткий индекс-«токен» (1–3 символа). Длинные — только через _( ... )
   out = out.replace(
-    /(\S)\s*_\s*([A-Za-zА-Яа-яЁё0-9\-−]{1,3})(?=(?:\s|[+\-−*/=,.;:()])|$)/g,
+    /(\S)\s*_\s*([A-Za-zА-яЁё0-9\-−]{1,3})(?=(?:\s|[+\-−*/=,.;:()])|$)/g,
     (_m, base: string, token: string) =>
       base + toSubscriptAll(asciiMinusToUnicode(token))
   );
@@ -83,13 +83,13 @@ function applyMathSubscripts(text: string): string {
 // ——— меняем дефис на минус, чтоб его не трогал языковой линтер ———
 function protectMathMinus(text: string): string {
   // латиница, цифры, скобки, над/подстрочные, модифайеры
-  const MOD = "\u02B0-\u02FF\u1D2C-\u1DBF\u2070-\u209F";
+  const MOD = "ʰ-˿ᴬ-ᶿ⁰-₟";
   const L = `[A-Za-z0-9)\\]${MOD}]`;
   const R = `[A-Za-z0-9(\\[${MOD}]`;
 
   return text.replace(
     new RegExp(`(${L})\\s*[\\-\\u2010-\\u2014]\\s*(${R})`, "g"),
-    (m, a, b) => (/[0-9]/.test(a) && /[0-9]/.test(b) ? m : `${a} \u2212 ${b}`)
+    (m, a, b) => (/[0-9]/.test(a) && /[0-9]/.test(b) ? m : `${a} − ${b}`)
   );
 }
 
@@ -103,7 +103,7 @@ function applyMathMultiplication(text: string): string {
   out = out.replace(/[•⋅]/g, "·");
 
   // 3. Нормализуем пробелы вокруг средней точки между «символьными» токенами
-  const SYM = "A-Za-zА-Яа-яЁё0-9\\u2070-\\u209F\\u02B0-\\u02FF\\u1D2C-\\u1D7F";
+  const SYM = "A-Za-zА-яЁё0-9⁰-₟ʰ-˿ᴬ-ᵿ";
   out = out.replace(
     new RegExp(`([${SYM}])\\s*·\\s*([${SYM}])`, "g"),
     "$1 · $2"
@@ -115,10 +115,9 @@ function applyMathMultiplication(text: string): string {
 function applyMathDivision(text: string): string {
   let out = text;
 
-  // ── 0) Вспомогательные классы символов (как в умножении)
-  const SYM = "A-Za-zА-Яа-яЁё0-9\\u2070-\\u209F\\u02B0-\\u02FF\\u1D2C-\\u1D7F";
+  const SYM = "A-Za-zА-яЁё0-9⁰-₟ʰ-˿ᴬ-ᵿ";
 
-  // ── 1) Короткие дроби → юникодные "vulgar fractions"
+  // 1) Короткие дроби → юникодные "vulgar fractions"
   const FRAC_MAP: Record<string, string> = {
     "1/2": "½",
     "1/3": "⅓",
@@ -141,20 +140,19 @@ function applyMathDivision(text: string): string {
     return FRAC_MAP[key] ?? `${a}/${b}`;
   });
 
-  // ── 2) Явный знак деления ÷ — нормализуем пробелы вокруг
+  // 2) Явный знак деления ÷ — пробелы вокруг
   out = out.replace(
     new RegExp(`([${SYM}])\\s*÷\\s*([${SYM}])`, "g"),
     "$1 ÷ $2"
   );
 
-  // ── 3) Обычное деление "/" — ставим пробелы вокруг между «символьными» токенами
-  // URL/почта уже замаскированы раньше в пайплайне
+  // 3) Обычное деление "/" — пробелы вокруг между «символьными» токенами
   out = out.replace(
     new RegExp(`([${SYM}])\\s*\\/\\s*([${SYM}])`, "g"),
     "$1 / $2"
   );
 
-  // ── 4) Чуть причешем "плюс" внутри скобок: (a+b) → (a + b)
+  // 4) Плюс внутри скобок: (a+b) → (a + b)
   out = out.replace(/\(([ \t]*)([^\)]+?)([ \t]*)\)/g, (_m, lsp, inner, rsp) => {
     const fixed = inner.replace(
       new RegExp(`([${SYM}])\\+([${SYM}])`, "g"),
@@ -169,7 +167,7 @@ function applyMathDivision(text: string): string {
 function applyMathEquality(text: string): string {
   let out = text;
 
-  const SYM = "A-Za-zА-Яа-яЁё0-9\\u2070-\\u209F\\u02B0-\\u02FF\\u1D2C-\\u1D7F";
+  const SYM = "A-Za-zА-яЁё0-9⁰-₟ʰ-˿ᴬ-ᵿ";
 
   // 1) != → ≠
   out = out.replace(
@@ -193,7 +191,7 @@ function applyMathEquality(text: string): string {
     "$1 = $2"
   );
 
-  // 4) Нормализуем пробелы вокруг ≈ и ≃ (символы оставляем как есть)
+  // 4) Пробелы вокруг ≈ и ≃
   out = out.replace(
     new RegExp(`([${SYM}])\\s*(≈|≃)\\s*([${SYM}])`, "g"),
     "$1 $2 $3"
@@ -222,17 +220,16 @@ function applyMathSigns(text: string): string {
 function applyMathConstants(text: string): string {
   let out = text;
 
-  // Специальные функции и константы
   out = out.replace(/\bsqrt\s*\(\s*([^)]+)\s*\)/gi, "√$1");
   out = out.replace(/\bpi\b/gi, "π");
   out = out.replace(/\binf\b/gi, "∞");
   out = out.replace(/\b(sum|Σ)\b/gi, "Σ");
   out = out.replace(/\bintegral\b/gi, "∫");
 
-  // явная форма: \alpha -> α (всегда)
+  // \alpha -> α
   out = out.replace(
     /\\(alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|omicron|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega)\b/gi,
-    (_m, name) => GREEK_MAP[name.toLowerCase()] || _m
+    (_m, name: string) => GREEK_MAP[name.toLowerCase()] || _m
   );
 
   return out;
@@ -241,40 +238,48 @@ function applyMathConstants(text: string): string {
 function applyMathOperators(text: string): string {
   let out = text;
 
-  // 1) sin/cos (...) → sin x / cos x  (скобки можно опускать)
+  // 1) sin/cos (...) → sin x / cos x
   out = out.replace(/\b(sin|cos)\s*\(\s*([^)]+?)\s*\)/gi, (_m, f, arg) => `${f} ${arg}`);
 
   // 2) log с основанием: log10(x) → log₁₀ x
-  out = out.replace(/\blog\s*([0-9]+)\s*\(\s*([^)]+?)\s*\)/gi,
+  out = out.replace(
+    /\blog\s*([0-9]+)\s*\(\s*([^)]+?)\s*\)/gi,
     (_m, base, arg) => `log${toSubscriptAll(base)} ${arg}`
   );
-  //    обычный log(x) → log x
+  // обычный log(x) → log x
   out = out.replace(/\blog\s*\(\s*([^)]+?)\s*\)/gi, (_m, arg) => `log ${arg}`);
 
   // 3) lim(x→0) → limₓ→₀
-  out = out.replace(/\blim\s*\(\s*([A-Za-z])\s*→\s*([^)]+?)\s*\)/g,
+  out = out.replace(
+    /\blim\s*\(\s*([A-Za-z])\s*→\s*([^)]+?)\s*\)/g,
     (_m, v, to) => `lim${toSubscriptAll(v)}→${toSubscriptAll(asciiMinusToUnicode(to))}`
   );
 
-  // 4) Сигма с нижним/верхним пределом:
-  //    ∑_(i=1)^n  →  ∑ᵢ₌₁ⁿ   (пробел после верхнего предела сохраняем)
-  out = out.replace(/∑\s*_\s*\(\s*([A-Za-z])\s*=\s*([^)]+?)\s*\)\s*\^\s*([A-Za-z0-9]+)\s*/g,
-    (_m, v, from, to) => `∑${toSubscriptAll(`${v}=${asciiMinusToUnicode(from)}`)}${toSuperscriptAll(to)} `
+  // 4) Сигма с верхним/нижним пределом
+  out = out.replace(
+    /∑\s*_\s*\(\s*([A-Za-z])\s*=\s*([^)]+?)\s*\)\s*\^\s*([A-Za-z0-9]+)\s*/g,
+    (_m, v, from, to) =>
+      `∑${toSubscriptAll(`${v}=${asciiMinusToUnicode(from)}`)}${toSuperscriptAll(to)} `
   );
-  // вариант только с нижним пределом: ∑_(i=1) → ∑ᵢ₌₁
-  out = out.replace(/∑\s*_\s*\(\s*([A-Za-z])\s*=\s*([^)]+?)\s*\)/g,
-    (_m, v, from) => `∑${toSubscriptAll(`${v}=${asciiMinusToUnicode(from)}`)}`
+  out = out.replace(
+    /∑\s*_\s*\(\s*([A-Za-z])\s*=\s*([^)]+?)\s*\)/g,
+    (_m, v, from) =>
+      `∑${toSubscriptAll(`${v}=${asciiMinusToUnicode(from)}`)}`
   );
 
-  // 5) vec(a) → a⃗  (комбинируемая стрелка U+20D7 ставится ПОСЛЕ символа)
-out = out.replace(/\b\\?vec\s*\(\s*([A-Za-z\u0391-\u03C9])\s*\)/g, (_m, v) => `\u20D7${v}`);
+  // 5) vec(a) → a⃗  (combining arrow U+20D7 ставится ПОСЛЕ символа).
+  // Исправлено: было `\b\?vec` — `\b` перед опциональным '\' проверял word-boundary
+  // относительно backslash (не word-char) и работал некорректно. Стрелка ставилась ДО буквы.
+  out = out.replace(
+    /(?:\\vec|\bvec)\s*\(\s*([A-Za-zΑ-ω])\s*\)/g,
+    (_m, v) => `${v}⃗`
+  );
 
   return out;
 }
 
 // ——— единая точка входа ———
 export function applyMath(text: string): string {
-  // порядок важен: степени -> индексы
   let out = applyMathPowers(text);
   out = applyMathSubscripts(out);
   out = applyMathMultiplication(out);
@@ -283,7 +288,6 @@ export function applyMath(text: string): string {
   out = applyMathSigns(out);
   out = applyMathConstants(out);
   out = applyMathOperators(out);
-
   out = protectMathMinus(out);
   return out;
 }

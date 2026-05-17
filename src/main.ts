@@ -1,185 +1,233 @@
-import { processTextWithStats } from "./stats";
 import { detectLanguage } from "./lang/detect";
 import { LANG_LABEL } from "./lang/maps";
-import { Language } from "./types";
+import { Language, Replacement } from "./types";
 
-import {
-  applyCommonRules,
-  maskUrlsAndEmails,
-  unmaskUrlsAndEmails,
-} from "./rules/common";
-
+import { applyCommonRules } from "./rules/common";
 import { applyMath } from "./rules/math";
 import { applyRussianRules } from "./rules/ru";
 import { applyEnglishRules } from "./rules/en";
-// import { applySerbianRules } from "./rules/sr"; // когда появится
+import { applyFrenchRules } from "./rules/fr";
+import { applyUkrainianRules } from "./rules/uk";
+import { applyGermanRules } from "./rules/de";
+import { applySpanishRules } from "./rules/es";
+import { applyBCSRules } from "./rules/bcs";
 
-// ---------- UTILS ----------
-async function loadAllFontsForNode(root: SceneNode | PageNode | DocumentNode) {
-  const textNodes: TextNode[] = [];
-  if ("findAll" in root) {
-    (root as PageNode)
-      .findAll((n: SceneNode) => n.type === "TEXT")
-      .forEach((n) => textNodes.push(n as TextNode));
-  } else if (root.type === "TEXT") {
-    textNodes.push(root as TextNode);
-  }
+import { maskSensitive } from "./text/mask";
+import { diffLCS, extractFreeSegments } from "./text/diff";
+import { applyReplacements } from "./text/ranges";
 
-  // собираем все сочетания шрифтов
-  const fonts = new Set<string>();
-  for (const t of textNodes) {
-    try {
-      if (t.fontName !== figma.mixed) {
-        const f = t.fontName as FontName;
-        fonts.add(JSON.stringify(f));
-      } else {
-        t.getRangeAllFontNames(0, t.characters.length).forEach((f) =>
-          fonts.add(JSON.stringify(f))
-        );
-      }
-    } catch {
-      /* ignore nodes without characters */
-    }
-  }
-
-  for (const f of fonts) {
-    const fn = JSON.parse(f) as FontName;
-    try {
-      await figma.loadFontAsync(fn);
-    } catch {
-      /* skip missing fonts */
-    }
-  }
-}
+const MAX_NODES = 2000;
+const BATCH_SIZE = 150;
+const PIPELINE_MAX_PASSES = 3;
+// LCS-таблица — O(n²) по памяти. На один свободный сегмент ставим лимит,
+// очень длинные узлы (макет с целым параграфом текста) — пропускаем целиком.
+const MAX_SEGMENT_LENGTH = 5000;
 
 type LangProcessor = (text: string) => string;
-let lastResultMessage: string | null = null;
+const NOOP: LangProcessor = (t) => t;
 
-/** Вернёт функцию преобразования для языка (безопасный no-op если модуль не подключён). */
 function getLangProcessor(lang: Language): LangProcessor {
   switch (lang) {
     case "ru":
-      return (t) => applyRussianRules(t);
+      return applyRussianRules;
     case "en":
-      return (t) => applyEnglishRules(t);
-    // case "sr": return (t) => applySerbianRules(t); // когда появится
+      return applyEnglishRules;
+    case "fr":
+      return applyFrenchRules;
+    case "uk":
+      return applyUkrainianRules;
+    case "de":
+      return applyGermanRules;
+    case "es":
+      return applySpanishRules;
+    case "bcs":
+      return applyBCSRules;
     default:
-      return (t) => t; // ничего не делаем для неизвестных/пока не реализованных языков
+      return NOOP;
   }
 }
 
-// function transformTextOnce(
-//   raw: string,
-//   lang: Language
-// ): { text: string; changes: number } {
-//   const langProc = getLangProcessor(lang);
-//   return processTextWithStats(raw, langProc, {
-//     mask: maskUrlsAndEmails,
-//     unmask: unmaskUrlsAndEmails,
-//     // 1) математика и общие правила — до языковых
-//     math: applyMath,
-//     common: (s) => applyCommonRules(s), // поддерживаются string и {text}
-//   });
-// }
-
-function transformTextOnce(raw: string, lang: Language): { text: string; changes: number } {
-  const langProc = getLangProcessor(lang);
-
-  let prev = raw;
-  let totalChanges = 0;
-
-  // Максимум 3 прохода: почти все наши правила стабилизируются за 1–2
-  for (let i = 0; i < 3; i++) {
-    const { text, changes } = processTextWithStats(prev, langProc, {
-      mask:   maskUrlsAndEmails,
-      unmask: unmaskUrlsAndEmails,
-      math:   applyMath,
-      common: (s) => applyCommonRules(s),
-      // если в TS-версии есть ещё поле units — просто передай tightenUnitsAndPercents сюда
-    });
-
-    totalChanges += changes;
-
-    if (text === prev) {
-      // дошли до фикс-точки, дальше ничего не меняется
-      return { text, changes: totalChanges };
-    }
-
-    prev = text;
-  }
-
-  // на всякий случай: если за 3 итерации не стабилизировалось, возвращаем последнее
-  return { text: prev, changes: totalChanges };
+function isTextNode(n: BaseNode): n is TextNode {
+  return n.type === "TEXT";
 }
 
-// ---------- MAIN ----------
-async function runHeadless() {
+function collectTargets(): TextNode[] {
   const selection = figma.currentPage.selection;
+  const out: TextNode[] = [];
 
-  // собираем текстовые узлы
-  // собираем текстовые узлы
-  const nodes: TextNode[] = [];
-
-  const isTextNode = (n: SceneNode): n is TextNode => n.type === "TEXT";
-
-  for (const node of selection) {
-    if ("findAll" in node) {
-      // важно: не указывать тип параметра у колбэка, чтобы не ловить перегрузки
-      const found = node.findAll((n) => n.type === "TEXT").filter(isTextNode);
-      nodes.push(...found); // тут уже TextNode[]
-    } else if (node.type === "TEXT") {
-      nodes.push(node as TextNode);
+  if (selection.length) {
+    for (const node of selection) {
+      if (isTextNode(node)) {
+        out.push(node);
+      } else if ("findAll" in node) {
+        const found = (node as ChildrenMixin).findAll(isTextNode) as TextNode[];
+        out.push(...found);
+      }
     }
+    return out;
   }
 
-  if (!nodes.length) {
-    figma.notify("На странице не обнаружено текстовых слоев", {
-      timeout: 2000,
-    });
-    return;
-  }
-
-  // 1) собрать небольшой корпус текста для детекта
-  const sample = nodes
-    .map((n) => n.characters ?? "")
-    .join("\n")
-    .slice(0, 4000); // более чем достаточно для детекта
-
-  // 2) определить язык
-  const lang = detectLanguage(sample) as Language;
-  const langLabel = LANG_LABEL[lang] ?? lang;
-
-  // 3) загрузить шрифты (как было)
-  await loadAllFontsForNode(figma.currentPage);
-
-  // 4) применить преобразование, посчитать изменения
-  let changes = 0;
-
-  for (const n of nodes) {
-    const before = n.characters ?? "";
-    const res = transformTextOnce(before, lang);
-    if (before !== res.text) {
-      n.characters = res.text;
-      changes += res.changes;
-    }
-  }
-
-  // 5) подготовить сообщение для нотифая/закрытия
-  lastResultMessage = `Язык: ${langLabel}. Внесено изменений: ${changes}`;
+  return figma.currentPage.findAll(isTextNode) as TextNode[];
 }
+
+async function loadFontsForNode(node: TextNode): Promise<boolean> {
+  if (!node.characters) return true;
+  try {
+    if (node.fontName !== figma.mixed) {
+      await figma.loadFontAsync(node.fontName as FontName);
+      return true;
+    }
+    const fonts = node.getRangeAllFontNames(0, node.characters.length);
+    await Promise.all(fonts.map((f) => figma.loadFontAsync(f)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function transformSegment(text: string, lang: Language): string {
+  const langProc = getLangProcessor(lang);
+  let prev = text;
+  for (let i = 0; i < PIPELINE_MAX_PASSES; i++) {
+    let t = applyMath(prev);
+    t = applyCommonRules(t);
+    t = langProc(t);
+    if (t === prev) return t;
+    prev = t;
+  }
+  return prev;
+}
+
+/**
+ * Считает replacements для узла: маскирует URL/email, разбивает на свободные
+ * сегменты, применяет правила в каждом изолированно, склеивает в общий список.
+ * Возвращает null, если узел слишком велик для безопасной обработки.
+ */
+function planReplacements(
+  before: string,
+  lang: Language
+): Replacement[] | null {
+  const { masked, masks } = maskSensitive(before);
+  const segments = extractFreeSegments(masked, masks);
+
+  const out: Replacement[] = [];
+  for (const seg of segments) {
+    if (seg.text.length > MAX_SEGMENT_LENGTH) return null;
+    const after = transformSegment(seg.text, lang);
+    if (after === seg.text) continue;
+    const local = diffLCS(seg.text, after);
+    for (const r of local) {
+      out.push({
+        start: seg.start + r.start,
+        end: seg.start + r.end,
+        text: r.text,
+        reason: r.reason,
+      });
+    }
+  }
+  return out;
+}
+
+function yieldControl(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function formatLangStats(stats: Map<Language, number>): string {
+  if (!stats.size) return "—";
+  const sorted = Array.from(stats.entries()).sort((a, b) => b[1] - a[1]);
+  return sorted.map(([lang]) => LANG_LABEL[lang] ?? lang).join(", ");
+}
+
+function postProgress(current: number, total: number, label: string) {
+  figma.ui.postMessage({ type: "progress", current, total, label });
+}
+
+async function run(): Promise<string> {
+  const allNodes = collectTargets();
+  if (!allNodes.length) {
+    return "Текстовые слои не найдены";
+  }
+
+  const nodes = allNodes.slice(0, MAX_NODES);
+  const truncated = allNodes.length > MAX_NODES;
+
+  postProgress(0, nodes.length, "Сканирование…");
+
+  let cancelled = false;
+  figma.ui.onmessage = (msg) => {
+    if (msg && msg.type === "cancel") cancelled = true;
+  };
+
+  let totalChanges = 0;
+  let affectedNodes = 0;
+  let skippedFonts = 0;
+  let skippedTooLong = 0;
+  const langStats = new Map<Language, number>();
+
+  for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
+    if (cancelled) break;
+
+    const batch = nodes.slice(i, i + BATCH_SIZE);
+
+    for (const node of batch) {
+      if (cancelled) break;
+
+      const before = node.characters;
+      if (!before) continue;
+
+      const lang = detectLanguage(before);
+      langStats.set(lang, (langStats.get(lang) ?? 0) + 1);
+
+      const replacements = planReplacements(before, lang);
+      if (replacements === null) {
+        skippedTooLong++;
+        continue;
+      }
+      if (!replacements.length) continue;
+
+      const ok = await loadFontsForNode(node);
+      if (!ok) {
+        skippedFonts++;
+        continue;
+      }
+
+      try {
+        applyReplacements(node, replacements);
+        totalChanges += replacements.length;
+        affectedNodes++;
+      } catch {
+        skippedFonts++;
+      }
+    }
+
+    const processed = Math.min(i + BATCH_SIZE, nodes.length);
+    postProgress(processed, nodes.length, cancelled ? "Отмена…" : "Обработка…");
+    await yieldControl();
+  }
+
+  const langLabel = formatLangStats(langStats);
+  const parts: string[] = [];
+  parts.push(cancelled ? "Отменено" : "Готово");
+  parts.push(`языки: ${langLabel}`);
+  parts.push(`изменений: ${totalChanges}`);
+  parts.push(`затронуто узлов: ${affectedNodes}`);
+  if (skippedFonts) parts.push(`пропущено по шрифту: ${skippedFonts}`);
+  if (skippedTooLong) parts.push(`пропущено длинных: ${skippedTooLong}`);
+  if (truncated) parts.push(`обработан лимит ${MAX_NODES} из ${allNodes.length}`);
+  parts.push("Ctrl/⌘+Z — отменить");
+
+  return parts.join(" · ");
+}
+
+figma.showUI(__html__, { width: 320, height: 160, themeColors: true });
 
 figma.on("run", async () => {
-  // HEADLESS режим. Если хотите UI — покажите его и не закрывайте плагин до клика:
-  // figma.showUI(__html__, { width: 360, height: 420 });
-  // figma.ui.onmessage = (msg) => { if (msg?.type === "process") runHeadless(); if (msg?.type === "close") figma.closePlugin(); };
-
+  let result = "Готово";
   try {
-    await runHeadless();
+    result = await run();
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    figma.notify("Ошибка: " + msg, { timeout: 3000 });
+    result = "Ошибка: " + (e instanceof Error ? e.message : String(e));
   } finally {
-    // ГАРАНТИРОВАННО останавливаем «Running…»
-    figma.closePlugin(lastResultMessage ?? "Готово");
+    figma.closePlugin(result);
   }
 });

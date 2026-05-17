@@ -1,26 +1,29 @@
-// src/text/mask.ts
-// Равнодлинная маска URL/Email — индексы правил совпадают с оригиналом
+// Равнодлинная маска URL/Email — индексы правил совпадают с оригиналом.
+// КАЖДАЯ маска получает уникальный PUA-символ, чтобы unmask по placeholder
+// не путал две маски с одинаковой длиной/символом.
 export type Mask = { start: number; end: number; placeholder: string; value: string };
 
-const PUA_START = 0xe000; // приватная плоскость Юникода
+const PUA_START = 0xe000;
+const PUA_END = 0xf8ff; // 6400 кодов — хватит на любой реалистичный узел
 
 const URL_RE =
   /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(\b[a-z][\w+.-]*:\/\/[^\s]+)/gi;
-const EMAIL_RE =
-  /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 
-export function maskSensitive(input: string) {
+export function maskSensitive(input: string): { masked: string; masks: Mask[] } {
   const masks: Mask[] = [];
   let out = input;
-  let i = 0;
 
   const apply = (re: RegExp) => {
-    out = out.replace(re, (m: string, ...rest: any[]) => {
-      const offset: number = rest[rest.length - 2]; // last-but-one is index from .replace
-      const ch = String.fromCharCode(PUA_START + (i % 512));
-      const placeholder = ch.repeat(m.length); // ВАЖНО: та же длина, что и оригинал
+    out = out.replace(re, (m: string, ..._rest: unknown[]) => {
+      const offset = _rest[_rest.length - 2] as number;
+      const code = PUA_START + masks.length;
+      if (code > PUA_END) {
+        // Не должно случаться на реальных узлах. Защитный no-op.
+        return m;
+      }
+      const placeholder = String.fromCharCode(code).repeat(m.length);
       masks.push({ start: offset, end: offset + m.length, placeholder, value: m });
-      i++;
       return placeholder;
     });
   };
@@ -31,10 +34,10 @@ export function maskSensitive(input: string) {
 }
 
 export function unmask(input: string, masks: Mask[]): string {
+  if (!masks.length) return input;
   let out = input;
   for (const { placeholder, value } of masks) {
-    const re = new RegExp(placeholder.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"), "g");
-    out = out.replace(re, value);
+    out = out.split(placeholder).join(value);
   }
   return out;
 }

@@ -1,85 +1,19 @@
 "use strict";
 
-// src/stats.ts
-function withReplaceCounter(fn) {
-  const origReplace = String.prototype.replace;
-  const origReplaceAll = String.prototype.replaceAll;
-  let count = 0;
-  function countMatches(str, search) {
-    var _a;
-    if (search instanceof RegExp) {
-      const hasG = (_a = search.flags) == null ? void 0 : _a.includes("g");
-      const re = hasG ? search : new RegExp(search.source, search.flags + "g");
-      const m = str.match(re);
-      return m ? m.length : 0;
-    } else if (typeof search === "string") {
-      if (search === "") return 0;
-      let from = 0, c = 0;
-      for (; ; ) {
-        const i = str.indexOf(search, from);
-        if (i === -1) break;
-        c++;
-        from = i + search.length;
-      }
-      return c;
-    }
-    return 0;
-  }
-  String.prototype.replace = function(search, replacer) {
-    const before = String(this);
-    const matches = countMatches(before, search);
-    const out = origReplace.apply(this, [search, replacer]);
-    if (matches > 0 && out !== before) count += matches;
-    return out;
-  };
-  if (origReplaceAll) {
-    String.prototype.replaceAll = function(search, replacer) {
-      const before = String(this);
-      const matches = countMatches(before, search);
-      const out = origReplaceAll.apply(this, [search, replacer]);
-      if (matches > 0 && out !== before) count += matches;
-      return out;
-    };
-  }
-  try {
-    const result = fn();
-    return { result, count };
-  } finally {
-    String.prototype.replace = origReplace;
-    if (origReplaceAll) String.prototype.replaceAll = origReplaceAll;
-  }
-}
-function processTextWithStats(raw, langProc, fns) {
-  var _a;
-  const { mask, unmask, math, common } = fns;
-  const { masked, parts } = mask(raw);
-  const mathRes = withReplaceCounter(() => math(masked));
-  let accText = mathRes.result;
-  let accChanges = mathRes.count;
-  const commonRes = withReplaceCounter(() => common(accText));
-  accText = (_a = commonRes.result.text) != null ? _a : commonRes.result;
-  accChanges += commonRes.count;
-  const langRes = withReplaceCounter(() => langProc(accText));
-  accText = langRes.result;
-  accChanges += langRes.count;
-  const finalText = unmask(accText, parts);
-  return { text: finalText, changes: accChanges };
-}
-
 // src/lang/detect.ts
-var CYR = /[\u0400-\u04FF]/;
+var CYR = /[Ѐ-ӿ]/;
 var LAT = /[A-Za-z]/;
 var HAS = {
-  es: /[ñáéíóúü]/i,
-  fr: /[çàâäæèéêëîïôœùûüÿ«»]/i,
+  es: /[ñáéíóúü¿¡]/i,
+  fr: /[çàâäæèéêëîïôœùûüÿ]|«|»/i,
   de: /[äöüß]/,
   uk: /[іїєґ]/i,
   bcs: /[čćšđž]/i,
-  srCy: /[ђћј]/i
+  // ђћјљњ — характерные сербские кириллические буквы
+  srCy: /[ђћјљњ]/i
 };
 function detectLanguage(text) {
-  const cyr = CYR.test(text);
-  if (cyr) {
+  if (CYR.test(text)) {
     if (HAS.uk.test(text)) return "uk";
     if (HAS.srCy.test(text)) return "ru";
     return "ru";
@@ -89,7 +23,7 @@ function detectLanguage(text) {
   if (HAS.es.test(text)) return "es";
   if (HAS.bcs.test(text)) return "bcs";
   if (LAT.test(text)) return "en";
-  return LAT.test(text) ? "en" : "ru";
+  return "ru";
 }
 
 // src/lang/maps.ts
@@ -102,6 +36,7 @@ var LANG_LABEL = {
   uk: "\u0443\u043A\u0440\u0430\u0438\u043D\u0441\u043A\u0438\u0439",
   bcs: "\u0431\u043E\u0441\u043D\u0438\u0439\u0441\u043A\u043E-\u0445\u043E\u0440\u0432\u0430\u0442\u0441\u043A\u043E-\u0441\u0435\u0440\u0431\u0441\u043A\u0438\u0439"
 };
+var NNBSP = "\u202F";
 var NBSP = "\xA0";
 var NBH = "\u2011";
 var EN_DASH = "\u2013";
@@ -117,50 +52,38 @@ var L_SQ = "\u2018";
 var R_SQ = "\u2019";
 
 // src/rules/common.ts
-var PUA_BASE = 57344;
-var MASK_LEN = 10;
-var MASK_TOKEN = String.fromCharCode(PUA_BASE) + "x".repeat(MASK_LEN - 1);
-var URL_RE = /\bhttps?:\/\/[^\s]+/gi;
-var EMAIL_RE = /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi;
-function maskUrlsAndEmails(input) {
-  const parts = [];
-  let masked = input.replace(URL_RE, (m) => {
-    parts.push({ raw: m });
-    return MASK_TOKEN;
-  });
-  masked = masked.replace(EMAIL_RE, (m) => {
-    parts.push({ raw: m });
-    return MASK_TOKEN;
-  });
-  return { masked, parts };
-}
-function unmaskUrlsAndEmails(text, parts) {
-  if (!parts.length) return text;
-  let i = 0;
-  return text.replace(new RegExp(MASK_TOKEN, "g"), () => {
-    var _a, _b;
-    return (_b = (_a = parts[i++]) == null ? void 0 : _a.raw) != null ? _b : "";
-  });
-}
+var WJ = "\u2060";
+var COMMON_UNITS_RE = new RegExp(
+  `(\\d+)${SP_ANY_SRC}+(\u043A\u0433|\u0433|\u0441\u043C|\u043C\u043C|\u043C\u0433|\u043C|\u043B|\u043A\u043C|\u0442|\u043C\u043B|\u043C\u043B\u043D|\u0442\u044B\u0441\\.?|\u20BD|\u20AC|\\$|%|\u0447\\.?|\u043C\u0438\u043D\\.?|\u0441\u0435\u043A\\.?)(?![A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u0451])`,
+  "g"
+);
+var ELLIPSIS_UNITS_RE = new RegExp(
+  `\u2026${SP_ANY_SRC}+(\u0441\u043C\\.?|\u043C\u043C|\u043C|\u043A\u043C|\u0433|\u043A\u0433|\u043B|%|\u20BD|\u20AC|\\$)`,
+  "g"
+);
+var DOUBLE_PRIME_RE = new RegExp(`(\\d)${SP_ANY_SRC}*''(?!')`, "g");
+var SINGLE_PRIME_RE = new RegExp(`(\\d)${SP_ANY_SRC}*'(?!')`, "g");
+var DEG_RE = /\b(\d+)\s*deg\b/gi;
+var ELLIPSIS_COMPACT_RE = /\s*\.{3}\s*/g;
+var ELLIPSIS_TRIM_LEFT_RE = /\s+…/g;
+var ELLIPSIS_SPACE_RIGHT_RE = /…(?=[A-Za-zА-Яа-яЁё0-9])/g;
+var PERCENT_SPACE_RE = /(\d)\s+%/g;
+var PERCENT_ELLIPSIS_RE = /%\s*…/g;
+var NUM_RANGE_RE = /(\d+)\s*-\s*(\d+)/g;
+var DOUBLE_SP_RE = / {2,}/g;
 function applyCommonRules(input) {
-  const replacements = [];
   let text = input;
-  text = text.replace(/\s*\.{3}\s*/g, ELLIPSIS).replace(/\s+…/g, ELLIPSIS).replace(/…(?=[A-Za-zА-Яа-яЁё0-9])/g, ELLIPSIS + " ");
-  text = text.replace(/(\d)\s+%/g, (_m, d) => `${d}%`);
-  const WJ = "\u2060";
-  text = text.replace(/%\s*…/g, "%" + WJ + ELLIPSIS);
-  text = text.replace(/(\d+)\s*-\s*(\d+)/g, (_m, a, b) => `${a}${EN_DASH}${b}`);
-  text = text.replace(/ {2,}/g, " ");
-  text = text.replace(
-    /(\d+)[ \u00A0\u2009\u202F\t]+(кг|г|см|мм|мг|м|л|км|т|мл|млн|тыс\.?|₽|€|\$|%|ч\.?|мин\.?|сек\.?)(?![A-Za-zА-Яа-яЁё])/g,
-    (_m, n, u) => `${n}${NBSP}${u}`
-  );
-  text = text.replace(/…\s+(см\.?|мм|м|км|г|кг|л|%|₽|€|\$)/g, (_m, u) => `\u2026${NBSP}${u}`);
-  const SP_ANY = "[ \\u00A0\\u2009\\u202F\\t]*";
-  text = text.replace(new RegExp(`(\\d)${SP_ANY}''(?!')`, "g"), "$1\u2033");
-  text = text.replace(new RegExp(`(\\d)${SP_ANY}'(?!')`, "g"), "$1\u2032");
-  text = text.replace(/\b(\d+)\s*deg\b/gi, "$1\xB0");
-  return { text, replacements };
+  text = text.replace(ELLIPSIS_COMPACT_RE, ELLIPSIS).replace(ELLIPSIS_TRIM_LEFT_RE, ELLIPSIS).replace(ELLIPSIS_SPACE_RIGHT_RE, ELLIPSIS + " ");
+  text = text.replace(PERCENT_SPACE_RE, "$1%");
+  text = text.replace(PERCENT_ELLIPSIS_RE, "%" + WJ + ELLIPSIS);
+  text = text.replace(NUM_RANGE_RE, `$1${EN_DASH}$2`);
+  text = text.replace(DOUBLE_SP_RE, " ");
+  text = text.replace(COMMON_UNITS_RE, (_m, n, u) => `${n}${NBSP}${u}`);
+  text = text.replace(ELLIPSIS_UNITS_RE, (_m, u) => `${ELLIPSIS}${NBSP}${u}`);
+  text = text.replace(DOUBLE_PRIME_RE, "$1\u2033");
+  text = text.replace(SINGLE_PRIME_RE, "$1\u2032");
+  text = text.replace(DEG_RE, "$1\xB0");
+  return text;
 }
 
 // src/lib/mathLib.ts
@@ -324,7 +247,7 @@ function applyMathPowers(text) {
     (_m, base, exp) => base + toSuperscriptAll(asciiMinusToUnicode(exp))
   );
   out = out.replace(
-    /(\S)\s*\^\s*([A-Za-zА-Яа-яЁё0-9+\-−]+)/g,
+    /(\S)\s*\^\s*([A-Za-zА-яЁё0-9+\-−]+)/g,
     (_m, base, token) => base + toSuperscriptAll(asciiMinusToUnicode(token))
   );
   return out;
@@ -340,7 +263,7 @@ function applyMathSubscripts(text) {
     }
   );
   out = out.replace(
-    /(\S)\s*_\s*([A-Za-zА-Яа-яЁё0-9\-−]{1,3})(?=(?:\s|[+\-−*/=,.;:()])|$)/g,
+    /(\S)\s*_\s*([A-Za-zА-яЁё0-9\-−]{1,3})(?=(?:\s|[+\-−*/=,.;:()])|$)/g,
     (_m, base, token) => base + toSubscriptAll(asciiMinusToUnicode(token))
   );
   out = out.replace(
@@ -362,7 +285,7 @@ function applyMathMultiplication(text) {
   let out = text;
   out = out.replace(new RegExp("(?<!\\*)\\*(?!\\*)", "g"), "\xB7");
   out = out.replace(/[•⋅]/g, "\xB7");
-  const SYM = "A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\\u2070-\\u209F\\u02B0-\\u02FF\\u1D2C-\\u1D7F";
+  const SYM = "A-Za-z\u0410-\u044F\u0401\u04510-9\u2070-\u209F\u02B0-\u02FF\u1D2C-\u1D7F";
   out = out.replace(
     new RegExp(`([${SYM}])\\s*\xB7\\s*([${SYM}])`, "g"),
     "$1 \xB7 $2"
@@ -371,7 +294,7 @@ function applyMathMultiplication(text) {
 }
 function applyMathDivision(text) {
   let out = text;
-  const SYM = "A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\\u2070-\\u209F\\u02B0-\\u02FF\\u1D2C-\\u1D7F";
+  const SYM = "A-Za-z\u0410-\u044F\u0401\u04510-9\u2070-\u209F\u02B0-\u02FF\u1D2C-\u1D7F";
   const FRAC_MAP = {
     "1/2": "\xBD",
     "1/3": "\u2153",
@@ -413,7 +336,7 @@ function applyMathDivision(text) {
 }
 function applyMathEquality(text) {
   let out = text;
-  const SYM = "A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\\u2070-\\u209F\\u02B0-\\u02FF\\u1D2C-\\u1D7F";
+  const SYM = "A-Za-z\u0410-\u044F\u0401\u04510-9\u2070-\u209F\u02B0-\u02FF\u1D2C-\u1D7F";
   out = out.replace(
     new RegExp(`([${SYM}])\\s*!=\\s*([${SYM}])`, "g"),
     "$1 \u2260 $2"
@@ -480,7 +403,10 @@ function applyMathOperators(text) {
     /∑\s*_\s*\(\s*([A-Za-z])\s*=\s*([^)]+?)\s*\)/g,
     (_m, v, from) => `\u2211${toSubscriptAll(`${v}=${asciiMinusToUnicode(from)}`)}`
   );
-  out = out.replace(/\b\\?vec\s*\(\s*([A-Za-z\u0391-\u03C9])\s*\)/g, (_m, v) => `\u20D7${v}`);
+  out = out.replace(
+    /(?:\\vec|\bvec)\s*\(\s*([A-Za-zΑ-ω])\s*\)/g,
+    (_m, v) => `${v}\u20D7`
+  );
   return out;
 }
 function applyMath(text) {
@@ -755,6 +681,32 @@ function preserveCase(canon, sample, mode = "first", locale = "ru") {
   return canon;
 }
 
+// src/dict/yo-pairs.json
+var yo_pairs_default = [
+  ["\u0440\u0435\u0431\u0435\u043D\u043E\u043A", "\u0440\u0435\u0431\u0451\u043D\u043E\u043A"],
+  ["\u0432\u0441\u0435", "\u0432\u0441\u0451"],
+  ["\u0432\u0435\u0434\u0435\u043C", "\u0432\u0435\u0434\u0451\u043C"],
+  ["\u0448\u0435\u043B", "\u0448\u0451\u043B"],
+  ["\u0448\u0435\u043F\u043E\u0442", "\u0448\u0451\u043F\u043E\u0442"],
+  ["\u0442\u0435\u043C\u043D\u044B\u0439", "\u0442\u0451\u043C\u043D\u044B\u0439"],
+  ["\u0436\u0435\u0440\u043D\u043E\u0432", "\u0436\u0451\u0440\u043D\u043E\u0432"]
+];
+
+// src/rules/yoPairs.ts
+var compiled = yo_pairs_default.map(
+  ([from, to]) => ({
+    re: new RegExp(`(?<![A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u0451])${from}(?![A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u0451])`, "giu"),
+    canon: to
+  })
+);
+function applyYoFix(text) {
+  let out = text;
+  for (const { re, canon } of compiled) {
+    out = out.replace(re, (m) => preserveCase(canon, m, "first", "ru"));
+  }
+  return out;
+}
+
 // src/rules/ru.ts
 function glueShortPreps(text) {
   const re = new RegExp(
@@ -816,7 +768,7 @@ function nbspAfterAbbr(text) {
   );
   out = out.replace(
     reAbbrDot,
-    (m, unit, generic, off) => {
+    (m, unit, _generic, off) => {
       let i = off + m.length;
       while (i < out.length && SP_ANY_CLASS.test(out[i])) i++;
       const next = out[i] || "";
@@ -908,6 +860,7 @@ function applyRussianRules(input) {
   text = fixHyphenatedAbbr(text);
   text = glueParticles(text);
   text = removeSpacesBeforePunctuation(text);
+  text = applyYoFix(text);
   return text;
 }
 
@@ -959,42 +912,41 @@ var UNIT_LIST = [
 ];
 
 // src/rules/en.ts
+var DBL_PRIME_RE = new RegExp(
+  `(\\d)${SP_ANY_SRC}*(?:''|["\u201D]|\\u2033)`,
+  "g"
+);
+var SINGLE_PRIME_RE2 = new RegExp(
+  `(\\d)${SP_ANY_SRC}*(?:'|\u2019|\\u2032)(?!['\u201D"\\u2033])`,
+  "g"
+);
 function normalizePrimes(text) {
-  text = text.replace(
-    new RegExp(`(\\d)${SP_ANY_SRC}*(?:''|["\u201D]|\\u2033)`, "g"),
-    `$1${DBL_PRM}`
-  );
-  text = text.replace(
-    new RegExp(`(\\d)${SP_ANY_SRC}*(?:'|\u2019|\\u2032)(?!['\u201D"\\u2033])`, "g"),
-    `$1${PRIME}`
-  );
-  return text;
+  return text.replace(DBL_PRIME_RE, `$1${DBL_PRM}`).replace(SINGLE_PRIME_RE2, `$1${PRIME}`);
 }
 function smartQuotesEn(input) {
   let text = input.replace(/[“”„‟]/g, '"').replace(/[‘’‚‛]/g, "'");
-  text = text.replace(
-    /\b([A-Za-z]+)'([A-Za-z]+)\b/g,
-    `${L_SQ}$1${R_SQ}$2`.replace(L_SQ, "").replace(R_SQ, R_SQ)
-  );
-  text = text.replace(
-    /\b([A-Za-z]+)'([A-Za-z]+)\b/g,
-    (_m, a, b) => `${a}${R_SQ}${b}`
-  );
-  text = text.replace(/\b([A-Za-z]+)'\b/g, (_m, a) => `${a}${R_SQ}`);
-  text = text.replace(/\b'([A-Za-z]+)\b/g, (_m, a) => `${R_SQ}${a}`);
+  text = text.replace(/\b([A-Za-z]+)'([A-Za-z]+)\b/g, `$1${R_SQ}$2`);
+  text = text.replace(/\b([A-Za-z]+)'\b/g, `$1${R_SQ}`);
+  text = text.replace(/\b'([A-Za-z]+)\b/g, `${R_SQ}$1`);
   let out = "";
   let open = true;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
-    out += ch === '"' ? open ? L_DQ : R_DQ : ch;
-    if (ch === '"') open = !open;
+    if (ch === '"') {
+      out += open ? L_DQ : R_DQ;
+      open = !open;
+    } else {
+      out += ch;
+    }
   }
   let nested = "";
   let inside = false;
+  let openS = true;
   for (let i = 0; i < out.length; i++) {
     const ch = out[i];
     if (ch === L_DQ) {
       inside = true;
+      openS = true;
       nested += ch;
       continue;
     }
@@ -1004,10 +956,8 @@ function smartQuotesEn(input) {
       continue;
     }
     if (inside && ch === "'") {
-      const seg = nested.slice(nested.lastIndexOf(L_DQ) + 1);
-      const opens = (seg.match(new RegExp(L_SQ, "g")) || []).length;
-      const closes = (seg.match(new RegExp(R_SQ, "g")) || []).length;
-      nested += opens === closes ? L_SQ : R_SQ;
+      nested += openS ? L_SQ : R_SQ;
+      openS = !openS;
     } else {
       nested += ch;
     }
@@ -1015,171 +965,608 @@ function smartQuotesEn(input) {
   out = nested;
   out = out.replace(new RegExp(`${L_DQ}${SP_ANY_SRC}+`, "g"), L_DQ);
   out = out.replace(new RegExp(`${SP_ANY_SRC}+${R_DQ}`, "g"), R_DQ);
-  out = out.replace(new RegExp(`${R_DQ}([.,!?:;\u2026])`, "g"), `${R_DQ}$1`);
   return out;
 }
-function normalizeRangesEn(text) {
-  return text.replace(
-    /\b(\d+)\s*-\s*(\d+)\b/g,
-    (_m, a, b) => `${a}${EN_DASH}${b}`
-  );
+var DOUBLE_DASH_RE = /(\s*)--(\s*)/g;
+function normalizeEmDashEn(text) {
+  return text.replace(DOUBLE_DASH_RE, (_m, lsp, rsp) => {
+    const left = lsp.length ? " " : "";
+    const right = rsp.length ? " " : "";
+    return `${left}${EM_DASH}${right}`;
+  });
 }
 var UNITS = UNIT_LIST.map(
   (u) => u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 ).join("|");
-function formatCurrencyLeadingSymbol(text) {
-  return text.replace(
-    /([$£€])\s*([0-9]{1,3}(?:[ .]?[0-9]{3})*|\d+)([.,]\d+)?/g,
-    (_m, sym, num, dec) => {
-      const rawDigits = num.replace(/[ .,]/g, "");
-      const withThousands = rawDigits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      let out = withThousands;
-      if (dec) {
-        out += "." + dec.slice(1);
-      }
-      return sym + out;
-    }
-  );
+var PERCENT_RE = new RegExp(`(\\d+)${SP_ANY_SRC}*%`, "g");
+var UNIT_RE = new RegExp(
+  `(\\d+)${SP_ANY_SRC}+(${UNITS})(?![A-Za-z0-9])`,
+  "g"
+);
+var LEADING_CURRENCY_RE = /([$£€])\s*([0-9]{1,3}(?:[ .,]?[0-9]{3})*|\d+)([.,]\d+)?/g;
+var US_THOUSANDS_RE = /([$£€]\d{1,3})\.(\d{3})(?!\d)/g;
+var TRAILING_CURRENCY_RE = new RegExp(
+  `(\\d)${SP_ANY_SRC}+([$\xA3\u20AC])`,
+  "g"
+);
+function formatLeadingCurrency(text) {
+  return text.replace(LEADING_CURRENCY_RE, (_m, sym, num, dec) => {
+    const rawDigits = num.replace(/[ .,]/g, "");
+    const withThousands = rawDigits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    const tail = dec ? "." + dec.slice(1) : "";
+    return `${sym}${withThousands}${tail}`;
+  });
 }
 function tightenUnitsAndPercentsEn(text) {
   let t = text;
-  t = formatCurrencyLeadingSymbol(t);
-  t = t.replace(/([$£€]\d{1,3})\.(\d{3})(?!\d)/g, (_m, a, b) => `${a},${b}`);
-  t = t.replace(
-    new RegExp(`(\\d+)${SP_ANY_SRC}*%`, "g"),
-    (_m, n) => `${n}${NBSP}%`
-  );
-  const reUnit = new RegExp(
-    `(\\d+)${SP_ANY_SRC}+(${UNITS})(?![A-Za-z0-9])`,
-    "g"
-  );
-  t = t.replace(reUnit, (_m, n, u) => `${n}${NBSP}${u}`);
+  t = formatLeadingCurrency(t);
+  t = t.replace(US_THOUSANDS_RE, "$1,$2");
+  t = t.replace(PERCENT_RE, (_m, n) => `${n}${NBSP}%`);
+  t = t.replace(UNIT_RE, (_m, n, u) => `${n}${NBSP}${u}`);
+  t = t.replace(TRAILING_CURRENCY_RE, (_m, n, sym) => `${n}${NBSP}${sym}`);
   return t;
 }
-function gluePrepsAndConjs(text) {
-  if (!SERVICE_WORDS2.length) return text;
-  const alternation = SERVICE_WORDS2.map(
+var RANGE_RE = /\b(\d+)\s*-\s*(\d+)\b/g;
+function normalizeRangesEn(text) {
+  return text.replace(RANGE_RE, `$1${EN_DASH}$2`);
+}
+var SERVICE_RE = SERVICE_WORDS2.length ? new RegExp(
+  `\\b(${SERVICE_WORDS2.map(
     (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  ).join("|");
-  const re = new RegExp(`\\b(${alternation})${SP_ANY_SRC}+(?=\\S)`, "gi");
-  return text.replace(re, (_m, w) => w + NBSP);
+  ).join("|")})${SP_ANY_SRC}+(?=\\S)`,
+  "gi"
+) : null;
+function gluePrepsAndConjs(text) {
+  if (!SERVICE_RE) return text;
+  return text.replace(SERVICE_RE, (_m, w) => w + NBSP);
 }
 function applyEnglishRules(input) {
   let t = input;
   t = normalizePrimes(t);
   t = smartQuotesEn(t);
+  t = normalizeEmDashEn(t);
   t = normalizeRangesEn(t);
   t = tightenUnitsAndPercentsEn(t);
   t = gluePrepsAndConjs(t);
   return t;
 }
 
-// src/main.ts
-async function loadAllFontsForNode(root) {
-  const textNodes = [];
-  if ("findAll" in root) {
-    root.findAll((n) => n.type === "TEXT").forEach((n) => textNodes.push(n));
-  } else if (root.type === "TEXT") {
-    textNodes.push(root);
+// src/rules/shared.ts
+function makeNumberUnitRegex(opts) {
+  var _a, _b;
+  const units = ((_a = opts.units) != null ? _a : []).join("|");
+  const curr = ((_b = opts.currencies) != null ? _b : []).join("|");
+  const tail = [units, curr].filter(Boolean).join("|");
+  return new RegExp(`(\\d[\\d\\s.,]*)\\s+(${tail})\\b`, "g");
+}
+var SI_UNITS = [
+  "mm",
+  "cm",
+  "m",
+  "km",
+  "g",
+  "kg",
+  "t",
+  "ml",
+  "l",
+  "px",
+  "pt",
+  "dpi",
+  "em",
+  "rem",
+  "MB",
+  "GB",
+  "TB",
+  "%"
+];
+var NUM_UNIT = {
+  ru: {
+    units: [
+      "\u043C\u043C",
+      "\u0441\u043C",
+      "\u043C",
+      "\u043A\u043C",
+      "\u0433",
+      "\u043A\u0433",
+      "\u0442",
+      "\u043C\u043B",
+      "\u043B",
+      "px",
+      "pt",
+      "dpi",
+      "em",
+      "rem",
+      "\xB0C",
+      "\xB0F",
+      "\u041C\u0411",
+      "\u0413\u0411",
+      "%"
+    ],
+    currencies: ["\u20BD", "\u20AC", "\\$"]
+  },
+  eu: {
+    units: SI_UNITS,
+    currencies: ["\u20AC", "\\$", "\xA3"]
+  },
+  en: {
+    units: [
+      ...SI_UNITS,
+      "mi",
+      "yd",
+      "ft",
+      "in",
+      "lb",
+      "oz",
+      "gal",
+      "h",
+      "min",
+      "s",
+      "mph",
+      "km/h",
+      "\xB0C",
+      "\xB0F",
+      "\xB0"
+    ],
+    currencies: ["\\$", "\xA3", "\u20AC"]
   }
-  const fonts = /* @__PURE__ */ new Set();
-  for (const t of textNodes) {
-    try {
-      if (t.fontName !== figma.mixed) {
-        const f = t.fontName;
-        fonts.add(JSON.stringify(f));
-      } else {
-        t.getRangeAllFontNames(0, t.characters.length).forEach(
-          (f) => fonts.add(JSON.stringify(f))
-        );
+};
+
+// src/rules/fr.ts
+var UNIT_RE2 = makeNumberUnitRegex(NUM_UNIT.eu);
+var PUNCT_BEFORE_RE = new RegExp(`${SP_ANY_SRC}*([;:!?\xBB])`, "g");
+function placeGuillemets(text) {
+  let out = "";
+  let open = true;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      out += open ? "\xAB" : "\xBB";
+      open = !open;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+var OPEN_GUILLEMET_SPACE_RE = new RegExp(`\xAB${SP_ANY_SRC}*`, "g");
+var CLOSE_GUILLEMET_SPACE_RE = new RegExp(`${SP_ANY_SRC}*\xBB`, "g");
+function tightenGuillemets(text) {
+  return text.replace(OPEN_GUILLEMET_SPACE_RE, "\xAB" + NNBSP).replace(CLOSE_GUILLEMET_SPACE_RE, NNBSP + "\xBB");
+}
+function tightenUnitsFr(text) {
+  return text.replace(UNIT_RE2, (m, n, _u) => {
+    const unitStart = n.length;
+    return n + NNBSP + m.slice(unitStart).replace(/^\s+/, "");
+  });
+}
+function narrowNbspBeforePunct(text) {
+  return text.replace(PUNCT_BEFORE_RE, (_m, p) => NNBSP + p);
+}
+function applyFrenchRules(input) {
+  let t = input;
+  t = placeGuillemets(t);
+  t = tightenGuillemets(t);
+  t = narrowNbspBeforePunct(t);
+  t = tightenUnitsFr(t);
+  t = t.replace(new RegExp(`(\\d)${NBSP}`, "g"), `$1${NNBSP}`);
+  return t;
+}
+
+// src/rules/uk.ts
+var UNIT_RE3 = makeNumberUnitRegex(NUM_UNIT.eu);
+var SHORT_PREP_RE = new RegExp(
+  `\\b(\u0432|\u0443|\u0437|\u0456\u0437|\u0439|\u0442\u0430|\u0430|\u0456)${SP_ANY_SRC}+(?=\\S)`,
+  "giu"
+);
+var TOKEN_NUM_RE = new RegExp(
+  `(\u2116|\xA7|\u0441\u0442\u043E\u0440\\.|\u0440\u0438\u0441\\.|\u043C\\.)${SP_ANY_SRC}+(?=\\S)`,
+  "g"
+);
+var QUOTE_NORMALIZE_RE = /[“”„‟]/g;
+function placeGuillemetsUk(text) {
+  let t = text.replace(QUOTE_NORMALIZE_RE, '"');
+  let out = "";
+  let open = true;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (ch === '"') {
+      out += open ? "\xAB" : "\xBB";
+      open = !open;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+function applyUkrainianRules(input) {
+  let t = input;
+  t = placeGuillemetsUk(t);
+  t = t.replace(SHORT_PREP_RE, (_m, w) => w + NBSP);
+  t = t.replace(TOKEN_NUM_RE, (_m, tok) => tok + NNBSP);
+  t = t.replace(UNIT_RE3, (m, n) => {
+    return n + NNBSP + m.slice(n.length).replace(/^\s+/, "");
+  });
+  return t;
+}
+
+// src/rules/de.ts
+var UNIT_RE4 = makeNumberUnitRegex(NUM_UNIT.eu);
+var ASCII_QUOTE_NORMALIZE_RE = /[”‟]/g;
+function placeGermanQuotes(text) {
+  if (/[»«]/.test(text)) return text;
+  let t = text.replace(ASCII_QUOTE_NORMALIZE_RE, '"');
+  let out = "";
+  let open = true;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (ch === '"') {
+      out += open ? "\u201E" : "\u201C";
+      open = !open;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+function applyGermanRules(input) {
+  let t = input;
+  t = placeGermanQuotes(t);
+  t = t.replace(UNIT_RE4, (m, n) => {
+    return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
+  });
+  return t;
+}
+
+// src/rules/es.ts
+var UNIT_RE5 = makeNumberUnitRegex(NUM_UNIT.eu);
+var ASCII_QUOTE_NORMALIZE_RE2 = /[„‟]/g;
+function placeSpanishQuotes(text) {
+  if (/[«»]/.test(text)) return text;
+  let t = text.replace(ASCII_QUOTE_NORMALIZE_RE2, '"');
+  let out = "";
+  let open = true;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (ch === '"') {
+      out += open ? L_DQ : R_DQ;
+      open = !open;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+function applySpanishRules(input) {
+  let t = input;
+  t = placeSpanishQuotes(t);
+  t = t.replace(UNIT_RE5, (m, n) => {
+    return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
+  });
+  return t;
+}
+
+// src/rules/bcs.ts
+var UNIT_RE6 = makeNumberUnitRegex(NUM_UNIT.eu);
+function placeBCSQuotes(text) {
+  if (/[«»]/.test(text)) return text;
+  if (/[„“]/.test(text)) return text;
+  let out = "";
+  let open = true;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      out += open ? "\u201E" : "\u201C";
+      open = !open;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+function applyBCSRules(input) {
+  let t = input;
+  t = placeBCSQuotes(t);
+  t = t.replace(UNIT_RE6, (m, n) => {
+    return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
+  });
+  return t;
+}
+
+// src/text/mask.ts
+var PUA_START = 57344;
+var PUA_END = 63743;
+var URL_RE = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(\b[a-z][\w+.-]*:\/\/[^\s]+)/gi;
+var EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+function maskSensitive(input) {
+  const masks = [];
+  let out = input;
+  const apply = (re) => {
+    out = out.replace(re, (m, ..._rest) => {
+      const offset = _rest[_rest.length - 2];
+      const code = PUA_START + masks.length;
+      if (code > PUA_END) {
+        return m;
       }
-    } catch (e) {
+      const placeholder = String.fromCharCode(code).repeat(m.length);
+      masks.push({ start: offset, end: offset + m.length, placeholder, value: m });
+      return placeholder;
+    });
+  };
+  apply(URL_RE);
+  apply(EMAIL_RE);
+  return { masked: out, masks };
+}
+
+// src/text/diff.ts
+function diffLCS(before, after) {
+  const n = before.length;
+  const m = after.length;
+  if (n === 0 && m === 0) return [];
+  if (n === 0) return [{ start: 0, end: 0, text: after, reason: "lcs" }];
+  if (m === 0) return [{ start: 0, end: n, text: "", reason: "lcs" }];
+  const w = m + 1;
+  const dp = new Uint32Array((n + 1) * w);
+  for (let i2 = n - 1; i2 >= 0; i2--) {
+    for (let j2 = m - 1; j2 >= 0; j2--) {
+      const idx = i2 * w + j2;
+      if (before.charCodeAt(i2) === after.charCodeAt(j2)) {
+        dp[idx] = dp[(i2 + 1) * w + (j2 + 1)] + 1;
+      } else {
+        const a = dp[(i2 + 1) * w + j2];
+        const b = dp[i2 * w + (j2 + 1)];
+        dp[idx] = a > b ? a : b;
+      }
     }
   }
-  for (const f of fonts) {
-    const fn = JSON.parse(f);
-    try {
-      await figma.loadFontAsync(fn);
-    } catch (e) {
+  const reps = [];
+  let i = 0;
+  let j = 0;
+  while (i < n || j < m) {
+    if (i < n && j < m && before.charCodeAt(i) === after.charCodeAt(j)) {
+      i++;
+      j++;
+      continue;
     }
+    const start = i;
+    const insStart = j;
+    while (i < n && (j >= m || dp[i * w + j] === dp[(i + 1) * w + j])) i++;
+    while (j < m && (i >= n || dp[i * w + j] === dp[i * w + (j + 1)])) j++;
+    reps.push({
+      start,
+      end: i,
+      text: after.slice(insStart, j),
+      reason: "lcs"
+    });
+  }
+  const merged = [];
+  for (const r of reps) {
+    const last = merged[merged.length - 1];
+    if (last && last.end === r.start) {
+      last.end = r.end;
+      last.text += r.text;
+    } else {
+      merged.push(r);
+    }
+  }
+  return merged;
+}
+function extractFreeSegments(masked, masks) {
+  const ms = [...masks].sort((a, b) => a.start - b.start);
+  const out = [];
+  let p = 0;
+  for (const m of ms) {
+    if (p < m.start) {
+      out.push({ start: p, end: m.start, text: masked.slice(p, m.start) });
+    }
+    p = Math.max(p, m.end);
+  }
+  if (p < masked.length) {
+    out.push({ start: p, end: masked.length, text: masked.slice(p) });
+  }
+  return out;
+}
+
+// src/text/ranges.ts
+function sanitize(reps, textLength) {
+  const v = reps.map((r) => {
+    var _a, _b;
+    return {
+      start: Math.max(0, Math.min(textLength, Number(r.start))),
+      end: Math.max(0, Math.min(textLength, Number(r.end))),
+      text: String((_a = r.text) != null ? _a : ""),
+      reason: (_b = r.reason) != null ? _b : ""
+    };
+  }).filter(
+    (r) => Number.isFinite(r.start) && Number.isFinite(r.end) && r.end >= r.start
+  );
+  return v.sort((a, b) => a.start - b.start).reverse();
+}
+function applyReplacements(node, replacements) {
+  if (!(replacements == null ? void 0 : replacements.length)) return;
+  const sorted = sanitize(replacements, node.characters.length);
+  for (const r of sorted) {
+    if (r.start === r.end && r.text === "") continue;
+    const insert = (r.text || "").replace(/[\uE000-\uF8FF]/g, "");
+    if (r.start !== r.end) node.deleteCharacters(r.start, r.end);
+    if (insert) node.insertCharacters(r.start, insert);
   }
 }
-var lastResultMessage = null;
+
+// src/main.ts
+var MAX_NODES = 2e3;
+var BATCH_SIZE = 150;
+var PIPELINE_MAX_PASSES = 3;
+var MAX_SEGMENT_LENGTH = 5e3;
+var NOOP = (t) => t;
 function getLangProcessor(lang) {
   switch (lang) {
     case "ru":
-      return (t) => applyRussianRules(t);
+      return applyRussianRules;
     case "en":
-      return (t) => applyEnglishRules(t);
-    // case "sr": return (t) => applySerbianRules(t); // когда появится
+      return applyEnglishRules;
+    case "fr":
+      return applyFrenchRules;
+    case "uk":
+      return applyUkrainianRules;
+    case "de":
+      return applyGermanRules;
+    case "es":
+      return applySpanishRules;
+    case "bcs":
+      return applyBCSRules;
     default:
-      return (t) => t;
+      return NOOP;
   }
 }
-function transformTextOnce(raw, lang) {
-  const langProc = getLangProcessor(lang);
-  let prev = raw;
-  let totalChanges = 0;
-  for (let i = 0; i < 3; i++) {
-    const { text, changes } = processTextWithStats(prev, langProc, {
-      mask: maskUrlsAndEmails,
-      unmask: unmaskUrlsAndEmails,
-      math: applyMath,
-      common: (s) => applyCommonRules(s)
-      // если в TS-версии есть ещё поле units — просто передай tightenUnitsAndPercents сюда
-    });
-    totalChanges += changes;
-    if (text === prev) {
-      return { text, changes: totalChanges };
-    }
-    prev = text;
-  }
-  return { text: prev, changes: totalChanges };
+function isTextNode(n) {
+  return n.type === "TEXT";
 }
-async function runHeadless() {
-  var _a, _b;
+function collectTargets() {
   const selection = figma.currentPage.selection;
-  const nodes = [];
-  const isTextNode = (n) => n.type === "TEXT";
-  for (const node of selection) {
-    if ("findAll" in node) {
-      const found = node.findAll((n) => n.type === "TEXT").filter(isTextNode);
-      nodes.push(...found);
-    } else if (node.type === "TEXT") {
-      nodes.push(node);
+  const out = [];
+  if (selection.length) {
+    for (const node of selection) {
+      if (isTextNode(node)) {
+        out.push(node);
+      } else if ("findAll" in node) {
+        const found = node.findAll(isTextNode);
+        out.push(...found);
+      }
     }
+    return out;
   }
-  if (!nodes.length) {
-    figma.notify("\u041D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0435 \u043D\u0435 \u043E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u043E \u0442\u0435\u043A\u0441\u0442\u043E\u0432\u044B\u0445 \u0441\u043B\u043E\u0435\u0432", {
-      timeout: 2e3
-    });
-    return;
-  }
-  const sample = nodes.map((n) => {
-    var _a2;
-    return (_a2 = n.characters) != null ? _a2 : "";
-  }).join("\n").slice(0, 4e3);
-  const lang = detectLanguage(sample);
-  const langLabel = (_a = LANG_LABEL[lang]) != null ? _a : lang;
-  await loadAllFontsForNode(figma.currentPage);
-  let changes = 0;
-  for (const n of nodes) {
-    const before = (_b = n.characters) != null ? _b : "";
-    const res = transformTextOnce(before, lang);
-    if (before !== res.text) {
-      n.characters = res.text;
-      changes += res.changes;
-    }
-  }
-  lastResultMessage = `\u042F\u0437\u044B\u043A: ${langLabel}. \u0412\u043D\u0435\u0441\u0435\u043D\u043E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439: ${changes}`;
+  return figma.currentPage.findAll(isTextNode);
 }
-figma.on("run", async () => {
+async function loadFontsForNode(node) {
+  if (!node.characters) return true;
   try {
-    await runHeadless();
+    if (node.fontName !== figma.mixed) {
+      await figma.loadFontAsync(node.fontName);
+      return true;
+    }
+    const fonts = node.getRangeAllFontNames(0, node.characters.length);
+    await Promise.all(fonts.map((f) => figma.loadFontAsync(f)));
+    return true;
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    figma.notify("\u041E\u0448\u0438\u0431\u043A\u0430: " + msg, { timeout: 3e3 });
+    return false;
+  }
+}
+function transformSegment(text, lang) {
+  const langProc = getLangProcessor(lang);
+  let prev = text;
+  for (let i = 0; i < PIPELINE_MAX_PASSES; i++) {
+    let t = applyMath(prev);
+    t = applyCommonRules(t);
+    t = langProc(t);
+    if (t === prev) return t;
+    prev = t;
+  }
+  return prev;
+}
+function planReplacements(before, lang) {
+  const { masked, masks } = maskSensitive(before);
+  const segments = extractFreeSegments(masked, masks);
+  const out = [];
+  for (const seg of segments) {
+    if (seg.text.length > MAX_SEGMENT_LENGTH) return null;
+    const after = transformSegment(seg.text, lang);
+    if (after === seg.text) continue;
+    const local = diffLCS(seg.text, after);
+    for (const r of local) {
+      out.push({
+        start: seg.start + r.start,
+        end: seg.start + r.end,
+        text: r.text,
+        reason: r.reason
+      });
+    }
+  }
+  return out;
+}
+function yieldControl() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+function formatLangStats(stats) {
+  if (!stats.size) return "\u2014";
+  const sorted = Array.from(stats.entries()).sort((a, b) => b[1] - a[1]);
+  return sorted.map(([lang]) => {
+    var _a;
+    return (_a = LANG_LABEL[lang]) != null ? _a : lang;
+  }).join(", ");
+}
+function postProgress(current, total, label) {
+  figma.ui.postMessage({ type: "progress", current, total, label });
+}
+async function run() {
+  var _a;
+  const allNodes = collectTargets();
+  if (!allNodes.length) {
+    return "\u0422\u0435\u043A\u0441\u0442\u043E\u0432\u044B\u0435 \u0441\u043B\u043E\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B";
+  }
+  const nodes = allNodes.slice(0, MAX_NODES);
+  const truncated = allNodes.length > MAX_NODES;
+  postProgress(0, nodes.length, "\u0421\u043A\u0430\u043D\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\u2026");
+  let cancelled = false;
+  figma.ui.onmessage = (msg) => {
+    if (msg && msg.type === "cancel") cancelled = true;
+  };
+  let totalChanges = 0;
+  let affectedNodes = 0;
+  let skippedFonts = 0;
+  let skippedTooLong = 0;
+  const langStats = /* @__PURE__ */ new Map();
+  for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
+    if (cancelled) break;
+    const batch = nodes.slice(i, i + BATCH_SIZE);
+    for (const node of batch) {
+      if (cancelled) break;
+      const before = node.characters;
+      if (!before) continue;
+      const lang = detectLanguage(before);
+      langStats.set(lang, ((_a = langStats.get(lang)) != null ? _a : 0) + 1);
+      const replacements = planReplacements(before, lang);
+      if (replacements === null) {
+        skippedTooLong++;
+        continue;
+      }
+      if (!replacements.length) continue;
+      const ok = await loadFontsForNode(node);
+      if (!ok) {
+        skippedFonts++;
+        continue;
+      }
+      try {
+        applyReplacements(node, replacements);
+        totalChanges += replacements.length;
+        affectedNodes++;
+      } catch (e) {
+        skippedFonts++;
+      }
+    }
+    const processed = Math.min(i + BATCH_SIZE, nodes.length);
+    postProgress(processed, nodes.length, cancelled ? "\u041E\u0442\u043C\u0435\u043D\u0430\u2026" : "\u041E\u0431\u0440\u0430\u0431\u043E\u0442\u043A\u0430\u2026");
+    await yieldControl();
+  }
+  const langLabel = formatLangStats(langStats);
+  const parts = [];
+  parts.push(cancelled ? "\u041E\u0442\u043C\u0435\u043D\u0435\u043D\u043E" : "\u0413\u043E\u0442\u043E\u0432\u043E");
+  parts.push(`\u044F\u0437\u044B\u043A\u0438: ${langLabel}`);
+  parts.push(`\u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439: ${totalChanges}`);
+  parts.push(`\u0437\u0430\u0442\u0440\u043E\u043D\u0443\u0442\u043E \u0443\u0437\u043B\u043E\u0432: ${affectedNodes}`);
+  if (skippedFonts) parts.push(`\u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u043F\u043E \u0448\u0440\u0438\u0444\u0442\u0443: ${skippedFonts}`);
+  if (skippedTooLong) parts.push(`\u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u0434\u043B\u0438\u043D\u043D\u044B\u0445: ${skippedTooLong}`);
+  if (truncated) parts.push(`\u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0430\u043D \u043B\u0438\u043C\u0438\u0442 ${MAX_NODES} \u0438\u0437 ${allNodes.length}`);
+  parts.push("Ctrl/\u2318+Z \u2014 \u043E\u0442\u043C\u0435\u043D\u0438\u0442\u044C");
+  return parts.join(" \xB7 ");
+}
+figma.showUI(__html__, { width: 320, height: 160, themeColors: true });
+figma.on("run", async () => {
+  let result = "\u0413\u043E\u0442\u043E\u0432\u043E";
+  try {
+    result = await run();
+  } catch (e) {
+    result = "\u041E\u0448\u0438\u0431\u043A\u0430: " + (e instanceof Error ? e.message : String(e));
   } finally {
-    figma.closePlugin(lastResultMessage != null ? lastResultMessage : "\u0413\u043E\u0442\u043E\u0432\u043E");
+    figma.closePlugin(result);
   }
 });
