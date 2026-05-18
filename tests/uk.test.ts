@@ -26,6 +26,11 @@ describe("uk: tokens №/§/стор./рис./м. + narrow NBSP", () => {
     E("tokenNum", "стор. 12", `стор.${NNBSP}12`));
 });
 
+describe("uk: thousands grouping (narrow NBSP)", () => {
+  test("1234567 → 1 234 567", () =>
+    E("groupThousands", "бюджет 1234567 гривень", `бюджет 1${NNBSP}234${NNBSP}567 гривень`));
+});
+
 describe("uk: number + unit (narrow NBSP)", () => {
   test("5 km", () => E("numUnit", "5 km", `5${NNBSP}km`));
 });

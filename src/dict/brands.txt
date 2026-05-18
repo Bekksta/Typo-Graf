@@ -1,0 +1,71 @@
+# Список брендов и продуктовых имён, написание которых мы НЕ трогаем.
+# Каждое слово на своей строке. Регистрозависимо: "iPhone" ≠ "iphone".
+# Чтобы добавить свой бренд — допиши строку и пересобери (`npm run build`).
+# Строки, начинающиеся с '#', — комментарии.
+
+# Apple
+iPhone
+iPad
+iPod
+iMac
+iCloud
+iOS
+iPadOS
+macOS
+watchOS
+tvOS
+MacBook
+MacBook Air
+MacBook Pro
+
+# Microsoft
+Windows
+Xbox
+OneDrive
+Office 365
+Teams
+GitHub
+Azure
+.NET
+
+# Google
+Gmail
+YouTube
+Android
+
+# Языки/платформы
+JavaScript
+TypeScript
+Node.js
+React
+Vue.js
+npm
+
+# Облака/SaaS
+AWS
+OAuth
+SaaS
+PaaS
+IaaS
+PostgreSQL
+GraphQL
+WebGL
+WebRTC
+ChatGPT
+
+# Соцсети/SaaS-домены
+Booking.com
+YouTube
+LinkedIn
+PayPal
+eBay
+DuckDuckGo
+Stack Overflow
+
+# Инструменты дизайна
+Figma
+FigJam
+Adobe XD
+Photoshop
+Illustrator
+InDesign

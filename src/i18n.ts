@@ -6,7 +6,7 @@ import { Language } from "./types";
 
 export type UILocale = Language;
 
-const SUPPORTED: UILocale[] = ["ru", "en", "fr", "uk", "de", "es", "bcs"];
+const SUPPORTED: UILocale[] = ["ru", "en", "fr", "uk", "de", "es", "bcs", "it", "pl", "pt", "nl"];
 
 export function detectUILocale(navLang: string | undefined | null): UILocale {
   const lc = (navLang || "").toLowerCase().split(/[-_]/)[0];
@@ -15,6 +15,10 @@ export function detectUILocale(navLang: string | undefined | null): UILocale {
   if (lc === "fr") return "fr";
   if (lc === "de") return "de";
   if (lc === "es") return "es";
+  if (lc === "it") return "it";
+  if (lc === "pl") return "pl";
+  if (lc === "pt") return "pt";
+  if (lc === "nl") return "nl";
   if (lc === "hr" || lc === "sr" || lc === "bs") return "bcs";
   if (SUPPORTED.indexOf(lc as UILocale) !== -1) return lc as UILocale;
   return "en";
@@ -161,6 +165,74 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     cancelling: "Otkazivanje…",
     cancelButton: "Otkaži",
   },
+  it: {
+    doneStat: "Fatto.",
+    cancelledStat: "Annullato.",
+    errorStat: "Errore: {message}.",
+    noTextLayersStat: "Nessun livello di testo trovato.",
+    languagesStat: "Lingue: {list}.",
+    changesStat: "Modifiche: {n}.",
+    affectedStat: "Nodi modificati: {n}.",
+    skippedFontsStat: "Saltati (font): {n}.",
+    skippedLongStat: "Saltati (troppo lunghi): {n}.",
+    limitStat: "Elaborati i primi {limit} di {total}.",
+    undoHint: "Ctrl/⌘+Z per annullare",
+    scanning: "Scansione…",
+    processing: "Elaborazione…",
+    cancelling: "Annullamento…",
+    cancelButton: "Annulla",
+  },
+  pl: {
+    doneStat: "Gotowe.",
+    cancelledStat: "Anulowano.",
+    errorStat: "Błąd: {message}.",
+    noTextLayersStat: "Nie znaleziono warstw tekstowych.",
+    languagesStat: "Języki: {list}.",
+    changesStat: "Zmiany: {n}.",
+    affectedStat: "Zmienione węzły: {n}.",
+    skippedFontsStat: "Pominięto (czcionka): {n}.",
+    skippedLongStat: "Pominięto (zbyt długie): {n}.",
+    limitStat: "Przetworzono pierwsze {limit} z {total}.",
+    undoHint: "Ctrl/⌘+Z aby cofnąć",
+    scanning: "Skanowanie…",
+    processing: "Przetwarzanie…",
+    cancelling: "Anulowanie…",
+    cancelButton: "Anuluj",
+  },
+  pt: {
+    doneStat: "Concluído.",
+    cancelledStat: "Cancelado.",
+    errorStat: "Erro: {message}.",
+    noTextLayersStat: "Nenhuma camada de texto encontrada.",
+    languagesStat: "Idiomas: {list}.",
+    changesStat: "Alterações: {n}.",
+    affectedStat: "Nós afetados: {n}.",
+    skippedFontsStat: "Ignorados (fonte): {n}.",
+    skippedLongStat: "Ignorados (muito longos): {n}.",
+    limitStat: "Processados os primeiros {limit} de {total}.",
+    undoHint: "Ctrl/⌘+Z para desfazer",
+    scanning: "Verificando…",
+    processing: "Processando…",
+    cancelling: "Cancelando…",
+    cancelButton: "Cancelar",
+  },
+  nl: {
+    doneStat: "Klaar.",
+    cancelledStat: "Geannuleerd.",
+    errorStat: "Fout: {message}.",
+    noTextLayersStat: "Geen tekstlagen gevonden.",
+    languagesStat: "Talen: {list}.",
+    changesStat: "Wijzigingen: {n}.",
+    affectedStat: "Betrokken knopen: {n}.",
+    skippedFontsStat: "Overgeslagen (lettertype): {n}.",
+    skippedLongStat: "Overgeslagen (te lang): {n}.",
+    limitStat: "Eerste {limit} van {total} verwerkt.",
+    undoHint: "Ctrl/⌘+Z om ongedaan te maken",
+    scanning: "Scannen…",
+    processing: "Verwerken…",
+    cancelling: "Annuleren…",
+    cancelButton: "Annuleren",
+  },
 };
 
 const LANG_NAMES: Record<UILocale, Record<Language, string>> = {
@@ -172,6 +244,10 @@ const LANG_NAMES: Record<UILocale, Record<Language, string>> = {
     es: "испанский",
     uk: "украинский",
     bcs: "BCS",
+    it: "итальянский",
+    pl: "польский",
+    pt: "португальский",
+    nl: "голландский",
   },
   en: {
     ru: "Russian",
@@ -181,6 +257,10 @@ const LANG_NAMES: Record<UILocale, Record<Language, string>> = {
     es: "Spanish",
     uk: "Ukrainian",
     bcs: "BCS",
+    it: "Italian",
+    pl: "Polish",
+    pt: "Portuguese",
+    nl: "Dutch",
   },
   fr: {
     ru: "russe",
@@ -190,6 +270,10 @@ const LANG_NAMES: Record<UILocale, Record<Language, string>> = {
     es: "espagnol",
     uk: "ukrainien",
     bcs: "BCS",
+    it: "italien",
+    pl: "polonais",
+    pt: "portugais",
+    nl: "néerlandais",
   },
   uk: {
     ru: "російська",
@@ -199,6 +283,10 @@ const LANG_NAMES: Record<UILocale, Record<Language, string>> = {
     es: "іспанська",
     uk: "українська",
     bcs: "BCS",
+    it: "італійська",
+    pl: "польська",
+    pt: "португальська",
+    nl: "нідерландська",
   },
   de: {
     ru: "Russisch",
@@ -208,6 +296,10 @@ const LANG_NAMES: Record<UILocale, Record<Language, string>> = {
     es: "Spanisch",
     uk: "Ukrainisch",
     bcs: "BCS",
+    it: "Italienisch",
+    pl: "Polnisch",
+    pt: "Portugiesisch",
+    nl: "Niederländisch",
   },
   es: {
     ru: "ruso",
@@ -217,6 +309,10 @@ const LANG_NAMES: Record<UILocale, Record<Language, string>> = {
     es: "español",
     uk: "ucraniano",
     bcs: "BCS",
+    it: "italiano",
+    pl: "polaco",
+    pt: "portugués",
+    nl: "neerlandés",
   },
   bcs: {
     ru: "ruski",
@@ -226,6 +322,62 @@ const LANG_NAMES: Record<UILocale, Record<Language, string>> = {
     es: "španjolski",
     uk: "ukrajinski",
     bcs: "BCS",
+    it: "talijanski",
+    pl: "poljski",
+    pt: "portugalski",
+    nl: "nizozemski",
+  },
+  it: {
+    ru: "russo",
+    en: "inglese",
+    fr: "francese",
+    de: "tedesco",
+    es: "spagnolo",
+    uk: "ucraino",
+    bcs: "BCS",
+    it: "italiano",
+    pl: "polacco",
+    pt: "portoghese",
+    nl: "olandese",
+  },
+  pl: {
+    ru: "rosyjski",
+    en: "angielski",
+    fr: "francuski",
+    de: "niemiecki",
+    es: "hiszpański",
+    uk: "ukraiński",
+    bcs: "BCS",
+    it: "włoski",
+    pl: "polski",
+    pt: "portugalski",
+    nl: "niderlandzki",
+  },
+  pt: {
+    ru: "russo",
+    en: "inglês",
+    fr: "francês",
+    de: "alemão",
+    es: "espanhol",
+    uk: "ucraniano",
+    bcs: "BCS",
+    it: "italiano",
+    pl: "polonês",
+    pt: "português",
+    nl: "holandês",
+  },
+  nl: {
+    ru: "Russisch",
+    en: "Engels",
+    fr: "Frans",
+    de: "Duits",
+    es: "Spaans",
+    uk: "Oekraïens",
+    bcs: "BCS",
+    it: "Italiaans",
+    pl: "Pools",
+    pt: "Portugees",
+    nl: "Nederlands",
   },
 };
 

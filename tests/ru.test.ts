@@ -82,6 +82,48 @@ describe("ru: yo-fix (white-list)", () => {
     E("yoFix", "мел", "мел"));
 });
 
+describe("ru: date ranges (em-dash, no spaces)", () => {
+  test("1991-1995 → 1991—1995 (годы)", () =>
+    E("yearRange", "1991-1995", "1991—1995"));
+  test("1991–1995 → 1991—1995 (en-dash → em-dash)", () =>
+    E("yearRange", "1991–1995", "1991—1995"));
+  test("январь-март → январь—март", () =>
+    E("monthRange", "январь-март", "январь—март"));
+  test("сентября-декабря → сентября—декабря (родительный)", () =>
+    E("monthRangeGen", "с сентября-декабря", `с${NBSP}сентября—декабря`));
+  test("числовой диапазон 10-12 не превращается в em-dash (через ru-rules — без common)", () =>
+    E("noNumRange", "10-12", "10-12"));
+});
+
+describe("ru: и/или normalization", () => {
+  test("'и / или' → 'и/или' (без пробелов)", () =>
+    E("andOr", "и / или", "и/или"));
+  test("'и/или' остаётся", () =>
+    E("andOrIdempotent", "и/или", "и/или"));
+});
+
+describe("ru: negative numbers in financial context (− U+2212)", () => {
+  test("-300 ₽ → −300 ₽", () =>
+    E("negCurrency", "-300 ₽", "−300 ₽"));
+  test("-15 % → −15 %", () =>
+    E("negPercent", "-15 %", "−15 %"));
+  test("-2 °C → −2 °C", () =>
+    E("negDeg", "-2 °C", "−2 °C"));
+  test("обычный дефис в списке -5 пункт остаётся", () =>
+    E("noMinus", "-5 пункт", "-5 пункт"));
+});
+
+describe("ru: thousands grouping", () => {
+  test("1234567 → 1 234 567 (NBSP)", () =>
+    E("groupThousands", "Бюджет 1234567 рублей", `Бюджет 1${NBSP}234${NBSP}567 рублей`));
+  test("12345 → 12 345 (минимум 5 цифр)", () =>
+    E("groupThousands", "ровно 12345", `ровно 12${NBSP}345`));
+  test("год 1991 не трогаем", () =>
+    E("noGroupYear", "В 1991 году", `В${NBSP}1991 году`));
+  test("четырёхзначное 1024 не трогаем", () =>
+    E("noGroupSmall", "ровно 1024", "ровно 1024"));
+});
+
 describe("ru: spaces before punctuation removed", () => {
   test("space before comma", () =>
     E("spaceBeforePunct", "слово , далее", "слово, далее"));

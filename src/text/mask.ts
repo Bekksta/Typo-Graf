@@ -1,6 +1,9 @@
-// Равнодлинная маска URL/Email — индексы правил совпадают с оригиналом.
+// Равнодлинная маска URL/Email/брендов — индексы правил совпадают с оригиналом.
 // КАЖДАЯ маска получает уникальный PUA-символ, чтобы unmask по placeholder
 // не путал две маски с одинаковой длиной/символом.
+// @ts-ignore esbuild/vite text-loader
+import brandsRaw from "../dict/brands.txt";
+
 export type Mask = { start: number; end: number; placeholder: string; value: string };
 
 const PUA_START = 0xe000;
@@ -9,6 +12,23 @@ const PUA_END = 0xf8ff; // 6400 кодов — хватит на любой ре
 const URL_RE =
   /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(\b[a-z][\w+.-]*:\/\/[^\s]+)/gi;
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+
+// Бренды грузим один раз из brands.txt; сортируем по длине (от длинных к
+// коротким), чтобы «Node.js» съел токен раньше, чем правило для «Node».
+const BRANDS = (brandsRaw as string)
+  .split("\n")
+  .map((s) => s.trim())
+  .filter((s) => s && !s.startsWith("#"))
+  .sort((a, b) => b.length - a.length);
+
+const BRAND_RE = BRANDS.length
+  ? new RegExp(
+      `(?<![\\p{L}\\p{N}])(?:${BRANDS.map((b) =>
+        b.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      ).join("|")})(?![\\p{L}\\p{N}])`,
+      "gu"
+    )
+  : null;
 
 export function maskSensitive(input: string): { masked: string; masks: Mask[] } {
   const masks: Mask[] = [];
@@ -30,6 +50,7 @@ export function maskSensitive(input: string): { masked: string; masks: Mask[] } 
 
   apply(URL_RE);
   apply(EMAIL_RE);
+  if (BRAND_RE) apply(BRAND_RE);
   return { masked: out, masks };
 }
 

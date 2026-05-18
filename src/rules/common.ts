@@ -6,8 +6,14 @@ import { NBSP, EN_DASH, ELLIPSIS, SP_ANY_SRC } from "../lang/maps";
 const WJ = "⁠";
 
 // Базовый набор единиц для number+unit; языковые правила могут расширять.
+// Расширен SI-юнитами и ru-сокращениями годов/веков (`гг.` / `вв.`),
+// которые должны быть «прижаты» к предшествующему числу.
 const COMMON_UNITS_RE = new RegExp(
-  `(\\d+)${SP_ANY_SRC}+(кг|г|см|мм|мг|м|л|км|т|мл|млн|тыс\\.?|₽|€|\\$|%|ч\\.?|мин\\.?|сек\\.?)(?![A-Za-zА-Яа-яЁё])`,
+  `(\\d+)${SP_ANY_SRC}+(кг|г|см|мм|мг|м|л|км|т|мл|млн|тыс\\.?|₽|€|\\$|%|` +
+    `ч\\.?|мин\\.?|сек\\.?|мкс|нс|мс|Гц|кГц|МГц|ГГц|` +
+    `мкА|мА|А|мкм|В|кВ|мВ|Вт|кВт|МВт|мВт|Ом|кОм|МОм|дБ|лм|лк|` +
+    `гг\\.?|вв\\.?` +
+    `)(?![A-Za-zА-Яа-яЁё])`,
   "g"
 );
 
@@ -27,6 +33,11 @@ const PERCENT_ELLIPSIS_RE = /%\s*…/g;
 const NUM_RANGE_RE = /(\d+)\s*-\s*(\d+)/g;
 const DOUBLE_SP_RE = / {2,}/g;
 
+// Знаки копирайта/торговой марки. Регистронезависимо: (c)/(C)/(tm)/(TM)/...
+const COPY_RE = /\((?:c|C)\)/g;
+const REG_RE = /\((?:r|R)\)/g;
+const TM_RE = /\((?:tm|TM|Tm|tM)\)/g;
+
 export function applyCommonRules(input: string): string {
   let text = input;
 
@@ -45,6 +56,11 @@ export function applyCommonRules(input: string): string {
   text = text.replace(DOUBLE_PRIME_RE, "$1″");
   text = text.replace(SINGLE_PRIME_RE, "$1′");
   text = text.replace(DEG_RE, "$1°");
+
+  // (tm) ДО (r), иначе "(r)" внутри "(tm)" уже не поймать; и оба ДО (c) — на всякий.
+  text = text.replace(TM_RE, "™");
+  text = text.replace(REG_RE, "®");
+  text = text.replace(COPY_RE, "©");
 
   return text;
 }

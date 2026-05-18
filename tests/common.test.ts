@@ -41,6 +41,10 @@ describe("common: double spaces", () => {
   test("collapse 2 spaces to 1", () =>
     E("doubleSpace", "a  b", "a b"));
   test("collapse 4 spaces", () => E("doubleSpace", "a    b", "a b"));
+  test("после точки конца предложения два пробела → один", () =>
+    E("doubleSpaceAfterDot", "text.  Next sentence", "text. Next sentence"));
+  test("после ! и ?", () =>
+    E("doubleSpaceAfterBang", "Wait!  Here we go?  Yes.", "Wait! Here we go? Yes."));
 });
 
 describe("common: number + unit (NBSP)", () => {
@@ -48,6 +52,16 @@ describe("common: number + unit (NBSP)", () => {
   test("%", () => E("numUnitRu", "300 ₽", "300" + NBSP + "₽"));
   test("digit + г.код — abbreviation 'г.' is glued (lookahead allows '.')", () =>
     E("numUnitRu", "12 г.код", `12${NBSP}г.код`));
+  test("гг.: 1991 гг. → NBSP перед", () =>
+    E("ggYearAbbr", "1991 гг.", `1991${NBSP}гг.`));
+  test("вв.: XX вв. (после римской цифры — не наш случай, только цифровые)", () =>
+    E("vvCenturyAbbr", "9 вв.", `9${NBSP}вв.`));
+  test("частота: 100 МГц", () =>
+    E("numUnitFreq", "100 МГц", `100${NBSP}МГц`));
+  test("сопротивление: 470 Ом", () =>
+    E("numUnitOhm", "470 Ом", `470${NBSP}Ом`));
+  test("ёмкость: 5 мВ", () =>
+    E("numUnitVolt", "5 мВ", `5${NBSP}мВ`));
 });
 
 describe("common: primes", () => {
@@ -60,4 +74,12 @@ describe("common: primes", () => {
 describe("common: degrees", () => {
   test("digit + deg → °", () => E("degree", "45 deg", "45°"));
   test("Deg case-insensitive", () => E("degree", "90 Deg", "90°"));
+});
+
+describe("common: trademark substitutions", () => {
+  test("(c) → ©", () => E("trademark", "Copyright (c) 2026", "Copyright © 2026"));
+  test("(C) → ©", () => E("trademark", "(C) Acme", "© Acme"));
+  test("(r) → ®", () => E("trademark", "Foo (r) Inc.", "Foo ® Inc."));
+  test("(tm) → ™", () => E("trademark", "Bar (tm)", "Bar ™"));
+  test("(TM) → ™", () => E("trademark", "Bar(TM)", "Bar™"));
 });

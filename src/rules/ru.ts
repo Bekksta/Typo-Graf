@@ -182,10 +182,65 @@ export function normalizeEmDash(text: string): string {
   // унификация уже стоящего em dash: NBSP слева, обычный пробел справа
   out = out.replace(
     /(\S)[ \u00A0\u2009\u202F\t]*—[ \u00A0\u2009\u202F\t]*(\S)/g,
-    (_m, a: string, b: string) => `${a}${NBSP}${EM_DASH} ${b}`
+    (m, a: string, b: string) => {
+      if (/\d/.test(a) && /\d/.test(b)) return m;
+      return `${a}${NBSP}${EM_DASH} ${b}`;
+    }
   );
   
   return out;
+}
+
+// 5.10 Диапазоны дат: годы и месяцы → em-dash без пробелов (Лебедев).
+const MONTHS_RU = [
+  "январь", "февраль", "март", "апрель", "май", "июнь",
+  "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
+  "января", "февраля", "марта", "апреля", "мая", "июня",
+  "июля", "августа", "сентября", "октября", "ноября", "декабря",
+];
+const MONTHS_ALT = MONTHS_RU.join("|");
+const YEAR_RANGE_RE = /\b(\d{4})[-–](\d{4})\b/g;
+const MONTH_RANGE_RE = new RegExp(
+  `(?<![\\p{L}\\p{N}])(${MONTHS_ALT})[\\s\\u00A0]*[-–][\\s\\u00A0]*(${MONTHS_ALT})(?![\\p{L}\\p{N}])`,
+  "giu"
+);
+
+export function convertDateRanges(text: string): string {
+  text = text.replace(YEAR_RANGE_RE, `$1${EM_DASH}$2`);
+  text = text.replace(MONTH_RANGE_RE, (_m, a: string, b: string) =>
+    `${a}${EM_DASH}${b}`
+  );
+  return text;
+}
+
+// 5.11 Отрицательные числа в валютном/процентном/единичном контексте:
+// «-300 ₽» → «−300 ₽» (U+2212, математический минус). Срабатывает только
+// если за минусом идёт число, а после него NBSP/space + валюта/% или
+// типичная единица — иначе риск задеть простой дефис в списках.
+const NEG_NUM_RE = new RegExp(
+  `(?<![\\d\\p{L}])-(\\d+(?:[.,]\\d+)?)(?=[ \\u00A0\\u2009\\u202F\\t]*(?:%|₽|€|\\$|°|кг|г|см|мм|м|л|км|мл|т|МБ|ГБ|ТБ|Гц|кГц|МГц|Вт|кВт|В|А|Ом))`,
+  "gu"
+);
+export function convertNegativeMinus(text: string): string {
+  return text.replace(NEG_NUM_RE, "−$1");
+}
+
+// 5.12 «и / или» (с пробелами вокруг косой черты) → «и/или» — это
+// устойчивая сочетание, всегда слитное.
+export function normalizeAndOr(text: string): string {
+  return text.replace(
+    /(?<![\p{L}\p{N}])и\s*\/\s*или(?![\p{L}\p{N}])/giu,
+    "и/или"
+  );
+}
+
+// Группировка тысяч в больших числах: 1234567 → 1 234 567 (NBSP-разделитель).
+// Порог — 5 цифр, чтобы не задеть года (1991), версии (1024) и пр. четырёхзначные.
+// Word-boundary защищает от ISBN/SKU-подобных штук с буквами рядом.
+export function groupThousandsRu(text: string): string {
+  return text.replace(/\b\d{5,}\b/g, (n) =>
+    n.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
+  );
 }
 
 // 5.9 Пробелы перед знаками препинания.
@@ -200,8 +255,14 @@ export function removeSpacesBeforePunctuation(text: string): string {
   return text;
 }
 
-// Оркестратор русских правил
-export function applyRussianRules(input: string): string {
+// Оркестратор русских правил.
+// `yoFix` можно выключить — это полезно для sr-Cyrl (cербской кириллицы),
+// где буквы «ё» в алфавите нет и ёфикация неуместна.
+export function applyRussianRules(
+  input: string,
+  opts: { yoFix?: boolean } = {}
+): string {
+  const yoFix = opts.yoFix !== false;
   let text = input;
 
   // Порядок важен!
@@ -211,10 +272,14 @@ export function applyRussianRules(input: string): string {
   text = nbspAfterAbbr(text); // 5.4
   text = smartQuotesRu(text); // 5.3
   text = normalizeEmDash(text); // 5.8 (без автозамены дефиса на —)
+  text = convertDateRanges(text); // 5.10 — годы и месяцы получают em-dash
   text = fixHyphenatedAbbr(text); // 5.5
   text = glueParticles(text); // 5.7
   text = removeSpacesBeforePunctuation(text); // 5.9
-  text = applyYoFix(text); // ТЗ §3.2.2 — ёфикация по белому списку
+  if (yoFix) text = applyYoFix(text); // ёфикация по белому списку
+  text = convertNegativeMinus(text); // 5.11
+  text = normalizeAndOr(text); // 5.12 — «и/или» без пробелов
+  text = groupThousandsRu(text);
 
   return text;
 }

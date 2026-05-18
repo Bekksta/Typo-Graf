@@ -41,6 +41,17 @@ describe("pipeline: URL/email guarded", () => {
   );
 });
 
+describe("pipeline: brand whitelist guarded", () => {
+  test("'JavaScript' — не дробится никакими правилами", () =>
+    E("brandJs", "Изучаем JavaScript всю жизнь.", `Изучаем JavaScript всю жизнь.`));
+  test("'Booking.com' остаётся как есть", () =>
+    E("brandDot", "Сайт Booking.com работает.", `Сайт Booking.com работает.`));
+  test("'iPhone' — точное написание сохранено", () =>
+    E("brandCase", "Купил iPhone вчера.", `Купил iPhone вчера.`));
+  test("'iphone' (lowercase) — НЕ в whitelist, обычная обработка", () =>
+    E("brandLower", "iphone today", `iphone today`));
+});
+
 describe("pipeline: end-to-end RU examples from TZ", () => {
   test("ребенок 20 кг → ребёнок 20 кг (NBSP перед кг)", () =>
     E(
@@ -64,6 +75,27 @@ describe("pipeline: detect → routes to correct lang", () => {
     E("detectFr", 'Ça dit "salut"', `Ça dit «${NNBSP}salut${NNBSP}»`));
   test("english detected → smart quotes", () =>
     E("detectEn", 'Say "hello"', `Say “hello”`));
+});
+
+describe("pipeline: CRLF normalization", () => {
+  test("CRLF → LF", () => {
+    const input = "line1\r\nline2";
+    const expected = "line1\nline2";
+    expectTransform(M, "crlf", input, expected, (s) => runPipeline(s, "en"));
+  });
+  test("lone CR → LF", () => {
+    const input = "line1\rline2";
+    const expected = "line1\nline2";
+    expectTransform(M, "cr", input, expected, (s) => runPipeline(s, "en"));
+  });
+});
+
+describe("pipeline: NFC normalization", () => {
+  test("decomposed é (e + combining acute) → precomposed é", () => {
+    const decomposed = "café"; // c, a, f, e, combining acute
+    const precomposed = "café"; // c, a, f, é
+    expectTransform(M, "nfc", decomposed, precomposed, (s) => runPipeline(s, "en"));
+  });
 });
 
 describe("pipeline: multi-pass convergence", () => {

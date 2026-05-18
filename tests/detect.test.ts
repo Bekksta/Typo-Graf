@@ -49,6 +49,25 @@ describe("detect: latin scripts", () => {
     expectLang("es", "¿Cómo estás? Muy bien", "es"));
   test("bcs diacritics", () =>
     expectLang("bcs", "Čokolada je slatka", "bcs"));
+  test("italian markers (ò/ì grave — Italian-only)", () =>
+    expectLang("it", "Però è bellissimo a Roma", "it"));
+  test("polish markers (ąęłńżźć)", () =>
+    expectLang("pl", "Cześć, jak się masz?", "pl"));
+  test("portuguese markers (ã/õ unique)", () =>
+    expectLang("pt", "São Paulo é uma cidade enorme", "pt"));
+  test("dutch markers (frequent words)", () =>
+    expectLang("nl", "Het is een mooie dag", "nl"));
+  test("serbian Cyrillic markers (ђћјљњ)", () =>
+    expectLang("sr-Cyrl", "Љубав је највећа", "sr-Cyrl"));
+});
+
+describe("detect: mixed scripts — dominant wins", () => {
+  test("основной текст английский + одно русское слово → en", () =>
+    expectLang("dominantEn", "It is awesome, but мир exists", "en"));
+  test("основной текст русский + одно англ. слово → ru", () =>
+    expectLang("dominantRu", "Привет, hello, как дела?", "ru"));
+  test("равное количество → кириллица побеждает (практичный дефолт)", () =>
+    expectLang("tieCyr", "ru ru ru en en en", "en"));
 });
 
 describe("detect: fallbacks", () => {

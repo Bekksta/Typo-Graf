@@ -11,6 +11,11 @@ import { applyUkrainianRules } from "./rules/uk";
 import { applyGermanRules } from "./rules/de";
 import { applySpanishRules } from "./rules/es";
 import { applyBCSRules } from "./rules/bcs";
+import { applyItalianRules } from "./rules/it";
+import { applyPolishRules } from "./rules/pl";
+import { applyPortugueseRules } from "./rules/pt";
+import { applyDutchRules } from "./rules/nl";
+import { applySerbianCyrillicRules } from "./rules/srCyrl";
 
 import { maskSensitive } from "./text/mask";
 import { diffLCS, extractFreeSegments } from "./text/diff";
@@ -44,6 +49,16 @@ function getLangProcessor(lang: Language): LangProcessor {
       return applySpanishRules;
     case "bcs":
       return applyBCSRules;
+    case "it":
+      return applyItalianRules;
+    case "pl":
+      return applyPolishRules;
+    case "pt":
+      return applyPortugueseRules;
+    case "nl":
+      return applyDutchRules;
+    case "sr-Cyrl":
+      return applySerbianCyrillicRules;
     default:
       return NOOP;
   }
@@ -89,7 +104,12 @@ async function loadFontsForNode(node: TextNode): Promise<boolean> {
 
 function transformSegment(text: string, lang: Language): string {
   const langProc = getLangProcessor(lang);
-  let prev = text;
+  // NFC: декомпозиционные формы (combining-acute и т.п.) превращаются в
+  // precomposed. Иначе посимвольные regex-правила могут увидеть «e + ́»
+  // как два символа и неправильно сработать. Стоит дёшево, делается раз.
+  // CRLF/CR → LF — Figma внутри использует LF, но импорт из текстовых
+  // файлов может прийти с другими переносами.
+  let prev = text.normalize("NFC").replace(/\r\n?/g, "\n");
   for (let i = 0; i < PIPELINE_MAX_PASSES; i++) {
     let s = applyMath(prev);
     s = applyCommonRules(s);
@@ -220,7 +240,11 @@ async function run(): Promise<string> {
         continue;
       }
 
-      const lang = detectLanguage(before);
+      // Детектим язык ПОСЛЕ маскирования URL/email — иначе латиница URL
+      // перевешивает текст ("см. https://example.com" определялся бы как en).
+      // Маска уже length-preserving, поэтому индексы не сдвигаются.
+      const { masked: maskedForDetect } = maskSensitive(before);
+      const lang = detectLanguage(maskedForDetect);
       langStats.set(lang, (langStats.get(lang) ?? 0) + 1);
 
       const replacements = planReplacements(before, lang);

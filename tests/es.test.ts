@@ -20,7 +20,13 @@ describe("es: number + unit (NBSP)", () => {
   test("5 km", () => E("numUnit", "5 km", `5${NBSP}km`));
 });
 
-describe("es: keeps ¿ ¡ as-is", () => {
-  test("¿Cómo estás? unchanged", () =>
-    E("invertedPunct", "¿Cómo estás?", "¿Cómo estás?"));
+describe("es: paired ¿…? / ¡…!", () => {
+  test("¿Cómo estás? без изменений", () =>
+    E("alreadyPaired", "¿Cómo estás?", "¿Cómo estás?"));
+  test("Cómo estás? → ¿Cómo estás?", () =>
+    E("addOpening", "Cómo estás?", "¿Cómo estás?"));
+  test("Hola! → ¡Hola!", () =>
+    E("addOpeningBang", "Hola!", "¡Hola!"));
+  test("Multi: Hola. Cómo estás? → Hola. ¿Cómo estás?", () =>
+    E("multi", "Hola. Cómo estás?", "Hola. ¿Cómo estás?"));
 });

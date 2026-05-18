@@ -53,6 +53,32 @@ describe("en: currency", () => {
     E("currency", "300 $", `300${NBSP}$`));
 });
 
+describe("en: latin abbreviations e.g./i.e./etc./vs.", () => {
+  test("e.g. → e.NBSPg.NBSPfoo", () =>
+    E("eg", "e.g. for example", `e.${NBSP}g.${NBSP}for example`));
+  test("i.e. → i.NBSPe.NBSPfoo", () =>
+    E("ie", "i.e. specifically", `i.${NBSP}e.${NBSP}specifically`));
+  test("etc. → etc.NBSPnext", () =>
+    E("etc", "lemons, oranges etc. today", `lemons, oranges etc.${NBSP}today`));
+  test("vs. → vs.NBSPnext", () =>
+    E("vs", "Tom vs. Jerry", `Tom vs.${NBSP}Jerry`));
+  test("e.g., с запятой — запятая прилипает", () =>
+    E("egComma", "e.g., apples and pears", `e.${NBSP}g., apples and${NBSP}pears`));
+});
+
+describe("en: honorifics + NBSP", () => {
+  test("Dr. Smith → Dr.NBSPSmith", () =>
+    E("honDr", "Dr. Smith arrived", `Dr.${NBSP}Smith arrived`));
+  test("Mr. Brown → Mr.NBSPBrown", () =>
+    E("honMr", "Mr. Brown left", `Mr.${NBSP}Brown left`));
+  test("Mrs. Davis → Mrs.NBSPDavis", () =>
+    E("honMrs", "Mrs. Davis spoke", `Mrs.${NBSP}Davis spoke`));
+  test("Prof. Lee → Prof.NBSPLee", () =>
+    E("honProf", "Prof. Lee taught", `Prof.${NBSP}Lee taught`));
+  test("конец предложения не трогается", () =>
+    E("noEndSentence", "Just saw Mr.", "Just saw Mr."));
+});
+
 describe("en: service words glue with NBSP", () => {
   test("a dog", () => E("serviceWords", "a dog", `a${NBSP}dog`));
   test("the cat", () =>

@@ -12,6 +12,11 @@ import { applyUkrainianRules } from "../../src/rules/uk";
 import { applyGermanRules } from "../../src/rules/de";
 import { applySpanishRules } from "../../src/rules/es";
 import { applyBCSRules } from "../../src/rules/bcs";
+import { applyItalianRules } from "../../src/rules/it";
+import { applyPolishRules } from "../../src/rules/pl";
+import { applyPortugueseRules } from "../../src/rules/pt";
+import { applyDutchRules } from "../../src/rules/nl";
+import { applySerbianCyrillicRules } from "../../src/rules/srCyrl";
 import { detectLanguage } from "../../src/lang/detect";
 import { maskSensitive, unmask } from "../../src/text/mask";
 import { extractFreeSegments } from "../../src/text/diff";
@@ -38,6 +43,16 @@ function langProc(lang: Language): LangProc {
       return applySpanishRules;
     case "bcs":
       return applyBCSRules;
+    case "it":
+      return applyItalianRules;
+    case "pl":
+      return applyPolishRules;
+    case "pt":
+      return applyPortugueseRules;
+    case "nl":
+      return applyDutchRules;
+    case "sr-Cyrl":
+      return applySerbianCyrillicRules;
     default:
       return NOOP;
   }
@@ -45,7 +60,8 @@ function langProc(lang: Language): LangProc {
 
 function transformSegment(text: string, lang: Language): string {
   const proc = langProc(lang);
-  let prev = text;
+  // NFC + CRLF→LF (зеркалит прод-пайплайн).
+  let prev = text.normalize("NFC").replace(/\r\n?/g, "\n");
   for (let i = 0; i < PIPELINE_MAX_PASSES; i++) {
     let s = applyMath(prev);
     s = applyCommonRules(s);
@@ -61,8 +77,9 @@ function transformSegment(text: string, lang: Language): string {
  * Если `lang` явно задан — пропускает detect.
  */
 export function runPipeline(input: string, lang?: Language): string {
-  const language = lang ?? detectLanguage(input);
   const { masked, masks } = maskSensitive(input);
+  // Детект ПОСЛЕ маскирования — иначе латиница URL/email перевешивает.
+  const language = lang ?? detectLanguage(masked);
   const segments = extractFreeSegments(masked, masks);
 
   // Собираем результат, чередуя свободные сегменты и оригинальные маски.

@@ -163,6 +163,30 @@ function gluePrepsAndConjs(text: string): string {
   return text.replace(SERVICE_RE, (_m, w) => w + NBSP);
 }
 
+// English honorifics: Dr./Mr./Mrs./Ms./Prof./St./Sr./Jr./Rev./Capt./Lt./Col./Gen.
+// + NBSP перед фамилией. Не трогаем в конце предложения (где после '.' нет
+// заглавного имени, а идёт пробел и обычное слово/конец).
+const HONORIFICS_RE = /\b(Dr|Mr|Mrs|Ms|Prof|St|Sr|Jr|Rev|Capt|Lt|Col|Gen)\.\s+(?=[A-Z])/g;
+function tightenHonorifics(text: string): string {
+  return text.replace(HONORIFICS_RE, `$1.${NBSP}`);
+}
+
+// Латинские сокращения e.g. / i.e. / etc. / vs.
+// Внутри e.g. и i.e. ставим NBSP (по строгой типографике), и NBSP после
+// всего сокращения перед следующим словом.
+function tightenLatinAbbrs(text: string): string {
+  // 1) e.g. → e.NBSPg.   (требуем точки на ОБЕИХ позициях, чтобы случайно
+  // не подцепить "egg", "ego" и т.п.)
+  text = text.replace(/\be\.\s*g\.(?=\s|,|;|:|\)|$)/g, `e.${NBSP}g.`);
+  text = text.replace(/\bi\.\s*e\.(?=\s|,|;|:|\)|$)/g, `i.${NBSP}e.`);
+  // 2) NBSP после сокращения, если дальше идёт обычное слово
+  text = text.replace(
+    /(e\. g\.|i\. e\.|etc\.|vs\.)\s+(?=\S)/g,
+    `$1${NBSP}`
+  );
+  return text;
+}
+
 export function applyEnglishRules(input: string): string {
   let t = input;
   t = normalizePrimes(t);
@@ -171,6 +195,8 @@ export function applyEnglishRules(input: string): string {
   t = normalizeEmDashEn(t);
   t = normalizeRangesEn(t);
   t = tightenUnitsAndPercentsEn(t);
+  t = tightenLatinAbbrs(t);
+  t = tightenHonorifics(t);
   t = gluePrepsAndConjs(t);
   return t;
 }
