@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --platform=node --target=es2017 --outfile=dist/main.js && node -e \"require('fs').mkdirSync('dist',{recursive:true});require('fs').copyFileSync('src/ui.html','dist/ui.html')\"",
+    "build": "esbuild src/main.ts --bundle --platform=node --target=es2017 --loader:.txt=text --charset=utf8 --minify --outfile=dist/main.js && node -e \"require('fs').mkdirSync('dist',{recursive:true});require('fs').copyFileSync('src/ui.html','dist/ui.html')\"",
     "dev": "npm run build -- --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "showcase": "vite-node scripts/showcase.ts"
+    "showcase": "esbuild scripts/showcase.ts --bundle --platform=node --loader:.txt=text --charset=utf8 --target=es2020 --format=cjs --outfile=test-results/showcase.cjs && node test-results/showcase.cjs"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.118.0",

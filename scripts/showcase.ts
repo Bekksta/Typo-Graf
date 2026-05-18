@@ -38,7 +38,9 @@ const CORPUS: Case[] = [
   { group: "ru: №/§", lang: "ru", input: "См. № 5, § 104 устава." },
   { group: "ru: particles", lang: "ru", input: "Сделал ли я это? Если бы..." },
   { group: "ru: em-dash", lang: "ru", input: "Москва -- столица, Питер - вторая." },
-  { group: "ru: yo-fix", lang: "ru", input: "Шел ребенок, всё забыл." },
+  { group: "ru: yo-fix", lang: "ru", input: "Шел ребенок, ёлка светилась." },
+  { group: "ru: yo-fix biz", lang: "ru", input: "Учет за весь квартал и зачет долгов." },
+  { group: "ru: yo-fix omonym", lang: "ru", input: "Все эти все остались на полке." },
   { group: "ru: spaces before punct", lang: "ru", input: "Слово , далее ! И что ?" },
 
   // ───────── English ─────────
