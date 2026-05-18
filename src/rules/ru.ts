@@ -188,15 +188,13 @@ export function normalizeEmDash(text: string): string {
   return out;
 }
 
-// 5.9 Пробелы перед знаками препинания
+// 5.9 Пробелы перед знаками препинания.
+// Перед %, ‰, ₽, €, $ ПРОБЕЛ НЕ удаляем — по ТЗ там должен стоять NBSP,
+// который проставляется в common/lang-правилах; иначе он бы здесь срезался.
 export function removeSpacesBeforePunctuation(text: string): string {
   text = text.replace(new RegExp(`${SP_ANY_SRC}+([.,!?;:])`, "g"), "$1");
   text = text.replace(new RegExp(`${SP_ANY_SRC}+(\\u2026)`, "g"), "$1");
   text = text.replace(new RegExp(`${SP_ANY_SRC}+([)\\xBB])`, "g"), "$1");
-  text = text.replace(
-    new RegExp(`${SP_ANY_SRC}+([%\\u2030\\u20BD\\u20AC$])`, "g"),
-    "$1"
-  );
   // убрать случайные пробелы из URL (на всякий)
   text = text.replace(/https?:\/\/[^\s]+/g, (m) => m.replace(/ /g, ""));
   return text;

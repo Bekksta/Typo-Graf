@@ -23,8 +23,8 @@ describe("common: ellipsis", () => {
 });
 
 describe("common: percent", () => {
-  test("digit + space + % → no space", () =>
-    E("percent", "20 %", "20%"));
+  test("digit + space + % → digit NBSP % (по ТЗ — NBSP, не удаление)", () =>
+    E("percent", "20 %", `20${NBSP}%`));
   test("percent followed by ellipsis → WJ + ellipsis", () =>
     E("percentEllipsis", "20%…", "20%" + WJ + "…"));
 });

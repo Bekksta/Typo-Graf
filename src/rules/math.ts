@@ -87,8 +87,10 @@ function protectMathMinus(text: string): string {
   const L = `[A-Za-z0-9)\\]${MOD}]`;
   const R = `[A-Za-z0-9(\\[${MOD}]`;
 
+  // Em-dash (U+2014) — это типографическое тире, не математический минус;
+  // исключаем его из диапазона, чтобы не превращать существующие тире в '−'.
   return text.replace(
-    new RegExp(`(${L})\\s*[\\-\\u2010-\\u2014]\\s*(${R})`, "g"),
+    new RegExp(`(${L})\\s*[\\-\\u2010-\\u2013]\\s*(${R})`, "g"),
     (m, a, b) => (/[0-9]/.test(a) && /[0-9]/.test(b) ? m : `${a} − ${b}`)
   );
 }
@@ -102,11 +104,14 @@ function applyMathMultiplication(text: string): string {
   // 2. Привести все варианты точек к стандартной средней
   out = out.replace(/[•⋅]/g, "·");
 
-  // 3. Нормализуем пробелы вокруг средней точки между «символьными» токенами
+  // 3. Нормализуем пробелы вокруг средней точки между «символьными»
+  //    токенами. Делаем в два шага, иначе цепочка `a·b·c` после одного
+  //    прохода застревает на `a · b·c` (regex non-overlapping съедает `b`).
   const SYM = "A-Za-zА-яЁё0-9⁰-₟ʰ-˿ᴬ-ᵿ";
+  out = out.replace(/[ \t]*·[ \t]*/g, "·"); // схлопнуть пробелы вокруг ·
   out = out.replace(
-    new RegExp(`([${SYM}])\\s*·\\s*([${SYM}])`, "g"),
-    "$1 · $2"
+    new RegExp(`([${SYM}])·(?=[${SYM}])`, "g"),
+    "$1 · "
   );
 
   return out;
@@ -221,9 +226,11 @@ function applyMathConstants(text: string): string {
   let out = text;
 
   out = out.replace(/\bsqrt\s*\(\s*([^)]+)\s*\)/gi, "√$1");
-  out = out.replace(/\bpi\b/gi, "π");
+  // 'pi' конвертим только в нижнем регистре: 'Pi' может быть началом
+  // предложения или именем собственным в любом из 7 языков.
+  out = out.replace(/\bpi\b/g, "π");
   out = out.replace(/\binf\b/gi, "∞");
-  out = out.replace(/\b(sum|Σ)\b/gi, "Σ");
+  out = out.replace(/\b(sum|Σ)\b/g, "Σ");
   out = out.replace(/\bintegral\b/gi, "∫");
 
   // \alpha -> α

@@ -86,4 +86,8 @@ describe("ru: spaces before punctuation removed", () => {
     E("spaceBeforePunct", "слово , далее", "слово, далее"));
   test("space before question mark", () =>
     E("spaceBeforePunct", "что ?", "что?"));
+  test("NBSP перед % НЕ срезается", () =>
+    E("keepNbspBeforePercent", `20${NBSP}%`, `20${NBSP}%`));
+  test("NBSP перед ₽ НЕ срезается", () =>
+    E("keepNbspBeforeCurrency", `300${NBSP}₽`, `300${NBSP}₽`));
 });

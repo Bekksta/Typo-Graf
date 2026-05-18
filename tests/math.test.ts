@@ -30,6 +30,19 @@ describe("math: multiplication", () => {
     E("mul", "a•b", "a · b"));
   test("doesn't break **bold**", () =>
     E("mul", "**bold**", "**bold**"));
+  test("chain a*b*c → a · b · c (все пары получают пробелы)", () =>
+    E("mulChain", "a*b*c", "a · b · c"));
+});
+
+describe("math: protect minus does NOT touch em-dash", () => {
+  test("'4 — u' остаётся em-dash, не превращается в '−'", () =>
+    E("emDashUntouched", "4 — u", "4 — u"));
+});
+
+describe("math: pi is case-sensitive", () => {
+  test("lowercase 'pi' → π", () => E("piCase", "pi", "π"));
+  test("uppercase 'Pi' остаётся словом", () =>
+    E("piCase", "Pi", "Pi"));
 });
 
 describe("math: division and fractions", () => {

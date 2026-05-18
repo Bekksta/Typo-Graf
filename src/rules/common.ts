@@ -23,7 +23,6 @@ const DEG_RE = /\b(\d+)\s*deg\b/gi;
 const ELLIPSIS_COMPACT_RE = /\s*\.{3}\s*/g;
 const ELLIPSIS_TRIM_LEFT_RE = /\s+…/g;
 const ELLIPSIS_SPACE_RIGHT_RE = /…(?=[A-Za-zА-Яа-яЁё0-9])/g;
-const PERCENT_SPACE_RE = /(\d)\s+%/g;
 const PERCENT_ELLIPSIS_RE = /%\s*…/g;
 const NUM_RANGE_RE = /(\d+)\s*-\s*(\d+)/g;
 const DOUBLE_SP_RE = / {2,}/g;
@@ -36,7 +35,6 @@ export function applyCommonRules(input: string): string {
     .replace(ELLIPSIS_TRIM_LEFT_RE, ELLIPSIS)
     .replace(ELLIPSIS_SPACE_RIGHT_RE, ELLIPSIS + " ");
 
-  text = text.replace(PERCENT_SPACE_RE, "$1%");
   text = text.replace(PERCENT_ELLIPSIS_RE, "%" + WJ + ELLIPSIS);
 
   text = text.replace(NUM_RANGE_RE, `$1${EN_DASH}$2`);
