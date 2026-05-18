@@ -20,7 +20,7 @@ A Figma plugin that brings layout text to typographic standards — places non-b
 2. Wait for it to finish (or hit Cancel).
 3. When done, the plugin shows a summary: how many edits, on how many nodes, in which languages.
 
-Limit per run — 2000 nodes. Nodes with a single continuous fragment longer than 5000 characters are skipped and counted in the final summary.
+Limit per run — 2000 nodes. Nodes with text longer than 5000 characters are skipped and counted in the final summary.
 
 ## Languages
 
