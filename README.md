@@ -1,180 +1,182 @@
 # Typo Graf
 
-Плагин для Figma, который приводит текст в макетах к типографическим нормам — расставляет неразрывные пробелы, кавычки, тире, степени и единицы. Работает на семи языках, сохраняет стили и не требует подключения к сети.
+**English** · [Русский](README.ru.md)
 
-## Почему он
+A Figma plugin that brings layout text to typographic standards — places non-breaking spaces, smart quotes, dashes, superscripts and units, fixes apostrophes and Russian `ё`-fication. Seven languages, URL and email protection, style preservation, offline.
 
-- **Лёгкий.** Бандл — около 52 КБ, без UI-фреймворков, заставок и онбордингов.
-- **Без задержек.** Открывается мгновенно: прогресс-бар и кнопка «Отменить» — больше ничего.
-- **Оффлайн.** Все правила и словари внутри плагина, наружу ничего не уходит.
-- **Сохраняет стили.** `bold`, `italic`, шрифты, размеры и цвета остаются на месте — правки идут через диапазоны, а не перезаписью текста узла.
-- **Не трогает URL и email.** Они защищены на время прохода правил.
-- **Один прогон — одно undo.** Все изменения откатываются обычным `Ctrl/⌘+Z`.
+## Why it
 
-## Что плагин делает
+- **Lightweight.** Bundle < 1 MB — including a built-in ё-fication dictionary of ~107,000 word forms. No UI frameworks, no splash screens, no onboarding.
+- **No friction.** Opens instantly: a progress bar and a Cancel button — that's all that's on screen.
+- **Offline.** All rules, dictionaries and logic ship inside the bundle. `networkAccess: none` in the manifest — nothing leaves your machine.
+- **Preserves styles.** `bold`, `italic`, fonts, sizes and colors stay in place — edits are applied through ranges, not by rewriting node text.
+- **Leaves URLs and email alone.** They're masked with equal-length placeholders during the rule pass and restored afterwards.
+- **One run — one undo.** All changes are reverted with a single `Ctrl/⌘+Z`.
+- **One click and it works.** No settings, no dialogs, no mode picker.
 
-### Область действия
+## How to use
 
-- Если в Figma что-то выделено — обрабатывает текстовые узлы внутри выделения (включая вложенные).
-- Если ничего не выделено — обрабатывает все текстовые узлы текущей страницы.
-- Лимит за один запуск — 2000 узлов. Длинные узлы (>5000 символов в одном непрерывном фрагменте) пропускаются и попадают в финальную сводку.
-- Узлы обрабатываются батчами по 150 — между батчами UI обновляет прогресс.
+1. **Plugins → Typo Graf** in the Figma menu. If something is selected, the plugin processes text nodes inside the selection (including nested). If nothing is selected, it sweeps every text node on the current page.
+2. Wait for it to finish (or hit Cancel).
+3. When done, the plugin shows a summary: how many edits, on how many nodes, in which languages.
 
-### Язык
+Limit per run — 2000 nodes. Nodes with a single continuous fragment longer than 5000 characters are skipped and counted in the final summary.
 
-Определяется автоматически на уровне каждого текстового слоя (не страницы целиком) — по скрипту и характерным диакритикам:
+## Languages
 
-| Язык | Маркеры |
-|------|---------|
-| `ru` | кириллица (фолбэк) |
+Detected automatically per text layer — by script and characteristic diacritics:
+
+| Language | Markers |
+|----------|---------|
+| `ru` | Cyrillic (fallback) |
 | `uk` | `і ї є ґ` |
-| `en` | латиница (фолбэк) |
-| `fr` | `ç é â æ œ` и т. п. |
+| `en` | Latin (fallback) |
+| `fr` | `ç é â æ œ ÿ` |
 | `de` | `ä ö ü ß` |
-| `es` | `ñ á é í ó ú ¿ ¡` |
-| `bcs` | `č ć š đ ž` (латиница bs/hr/sr) |
+| `es` | `ñ á í ó ú ¿ ¡` |
+| `bcs` | `č ć š đ ž` (`bs`/`hr`/`sr` Latin) |
 
-Сербская кириллица обрабатывается как русский.
+Serbian Cyrillic is processed as Russian.
 
-## Правила
+## Rules
 
-### Общие (все языки)
+### Common (all languages)
 
-- `...` → `…` (U+2026), лишние пробелы вокруг чистятся.
-- `10-12` → `10–12` (en dash для числовых диапазонов).
-- Двойные пробелы → одинарный.
-- `12 кг`, `20 %`, `300 ₽` → NBSP между числом и единицей/валютой/процентом.
-- `12''` → `12″`, `12'` → `12′` (праймы).
+- `...` → `…` (U+2026), surrounding extra spaces cleaned up.
+- `10-12` → `10–12` (en dash for numeric ranges).
+- Double spaces → single.
+- `12 kg`, `20 %`, `300 $` → NBSP between number and unit/currency/percent.
+- `12''` → `12″`, `12'` → `12′` (primes).
 - `45 deg` → `45°`.
 
-### Математика
+### Math
 
-Работает на инлайн-выражениях, не лезет в LaTeX/MathML-блоки.
+Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 
-- **Степени:** `x^2 → x²`, `y^10 → y¹⁰`, `10^-3 → 10⁻³`, `e^(x) → eˣ`, `(a+b)^n → (a+b)ⁿ`.
-- **Индексы:** `x_1 → x₁`, `log_10(x) → log₁₀ x`.
-- **Умножение:** `a*b → a · b`, `a×b → a×b`, `a·b → a · b`. Жирный (`**...**`) не трогается.
-- **Деление:** `a/b → a / b`, `1/2 → ½`, `(a+b)/(c+d)` без замены `/` на `÷`.
-- **Сравнения:** `!= → ≠`, `<= → ≤`, `>= → ≥`, `= → =` (с пробелами), пробелы вокруг `≈ ≃`.
-- **Знаки:** `+- → ±`, `-+ → ∓`.
-- **Стрелки:** `-> → →`, `<- → ←`, `--> → ⟶`, `=> → ⇒`, `<=> → ⇔`.
-- **Константы и функции:** `pi → π`, `sqrt(x) → √x`, `inf → ∞`, `\alpha → α` (и остальные греческие), `sin(x) → sin x`, `cos(x) → cos x`, `log10(x) → log₁₀ x`, `lim(x→0) → limₓ→₀`, `∑_(i=1)^n a_i → ∑ᵢ₌₁ⁿ aᵢ`, `vec(a) → a⃗`.
+- **Powers:** `x^2 → x²`, `y^10 → y¹⁰`, `10^-3 → 10⁻³`, `e^(x) → eˣ`, `(a+b)^n → (a+b)ⁿ`.
+- **Subscripts:** `x_1 → x₁`, `log_10(x) → log₁₀ x`.
+- **Multiplication:** `a*b → a · b`, chains `a*b*c → a · b · c`. Bold (`**...**`) is preserved.
+- **Division:** `a/b → a / b`, `1/2 → ½`, `(a+b)/(c+d)` without replacing `/` with `÷`.
+- **Comparisons:** `!= → ≠`, `<= → ≤`, `>= → ≥`, `= → =` (with spaces), spaces around `≈ ≃`.
+- **Signs:** `+- → ±`, `-+ → ∓`.
+- **Arrows:** `-> → →`, `<- → ←`, `--> → ⟶`, `=> → ⇒`, `<=> → ⇔`.
+- **Constants and functions:** `pi → π`, `sqrt(x) → √x`, `inf → ∞`, `\alpha → α` (and the rest of Greek), `sin(x) → sin x`, `log10(x) → log₁₀ x`, `lim(x→0) → limₓ→₀`, `vec(a) → a⃗`.
 
-### Русский (`ru`)
+### Russian (`ru`)
 
-- NBSP после коротких предлогов и союзов: `в дом`, `на улице`, `и т. п.`
-- NBSP перед частицами `бы`, `ли`, `же`.
-- Инициалы: `А. С. Пушкин` — NBSP между инициалами и фамилией.
-- Аббревиатуры с точкой: `г. Москва`, `ул. Ленина`, `№ 8`, `§ 104`, `1981 г.`, `IV гл.` — NBSP после.
-- Составные сокращения: `и т. д.`, `т. е.`, `до н. э.` — нормализованы вместе с NBSP.
-- Дефисные сокращения без точки: `г-н`, `г-жа`, `д-р`, `р-н` — неразрывный дефис (U+2011) внутри и NBSP после.
-- Кавычки-ёлочки `«…»`. Пунктуация прижимается к закрывающей.
-- Тире: двойной дефис `--` и одиночный `-` между не-цифровыми токенами → `—`, схема `слово<NBSP>—<space>слово`.
-- Ёфикация по белому списку: `ребёнок`, `всё`, `шёл`, `тёмный` и др. Список расширяется в `src/dict/yo-pairs.json`.
+- NBSP after short prepositions and conjunctions: `в дом`, `на улице`, `и т. п.`
+- NBSP before particles `бы`, `ли`, `же`.
+- Initials: `А. С. Пушкин` — NBSP between initials and surname.
+- Abbreviations with a dot: `г. Москва`, `ул. Ленина`, `№ 8`, `§ 104`, `1981 г.` — NBSP after.
+- Compound abbreviations: `и т. д.`, `т. е.`, `до н. э.` — normalized together with NBSP.
+- Hyphenated abbreviations without a dot: `г-н`, `г-жа`, `д-р`, `р-н` — non-breaking hyphen (U+2011) inside and NBSP after.
+- Angle quotes `«…»`. Punctuation pulled inside the closing quote.
+- Dashes: double hyphen `--` and single `-` between non-numeric tokens → `—`, with the pattern `word<NBSP>—<space>word`.
+- **Ё-fication on ~107,000 word forms** from the [eyo-kernel](https://github.com/e2yo/eyo-kernel) dictionary. Only "safe" forms are replaced — those without a same-spelling homograph that lacks `ё`. So `ребенок → ребёнок`, `учет → учёт`, `шел → шёл`, but `все` stays as is (homograph of the plural of «весь»). No guessing edits.
 
-### Английский (`en`)
+### English (`en`)
 
-- Smart quotes: `"..."` → `“…”`, вложенные `'...'` → `‘…’`.
-- Апострофы в словах: `don't` → `don’t`.
-- Праймы: `12''` → `12″`, `12'` → `12′`.
-- `--` → `—` без навязывания пробелов вокруг (по исходному стилю).
-- Диапазоны: `10-12 km` → `10–12 km`.
-- Валюты: `$1234.5` нормализуется в US-формат `$1,234.5`. Порядок `$ 300` / `300 $` сохраняется, NBSP добавляется.
-- NBSP после служебных слов (`a`, `an`, `the`, `and`, `but`, `or`, `to`, `of`, `in`, `on`, `at`, `by`, `as`, `I`).
-- NBSP перед единицами: `15 km`, `20 %`.
+- Smart quotes: `"..."` → `“…”`, nested `'...'` → `‘…’`.
+- Apostrophes inside and at word end: `don't` → `don’t`, `lovers'` → `lovers’`.
+- Primes: `12''` → `12″`, `12'` → `12′`.
+- `--` → `—` without forcing surrounding spaces (follows source style).
+- Ranges: `10-12 km` → `10–12 km`.
+- Currency: `$1234.5` → `$1,234.5` (US format). `$ 300` / `300 $` order preserved, NBSP added.
+- NBSP after service words (`a`, `an`, `the`, `and`, `but`, `or`, `to`, `of`, `in`, `on`, `at`, `by`, `as`, `I`).
+- NBSP before units: `15 km`, `20 %`.
 
-### Французский (`fr`)
+### French (`fr`)
 
-- Гийеметы `« … »` с узкими NBSP (U+202F) внутри.
-- Узкий NBSP перед `; : ? ! »`.
-- Число + единица/валюта/процент → узкий NBSP.
+- Guillemets `« … »` with narrow NBSP (U+202F) inside.
+- Narrow NBSP before `; : ? ! »`.
+- Number + unit/currency/percent → narrow NBSP.
 
-### Украинский (`uk`)
+### Ukrainian (`uk`)
 
-- Кавычки `«…»`.
-- NBSP после коротких предлогов: `в`, `у`, `з`, `із`, `й`, `та`, `а`, `і`.
-- Узкий NBSP после `№`, `§`, `стор.`, `рис.`, `м.`.
-- Число + единица/валюта/процент → узкий NBSP.
+- Quotes `«…»`.
+- NBSP after short prepositions: `в`, `у`, `з`, `із`, `й`, `та`, `а`, `і`.
+- Narrow NBSP after `№`, `§`, `стор.`, `рис.`, `м.`.
+- Number + unit/currency/percent → narrow NBSP.
 
-### Немецкий (`de`)
+### German (`de`)
 
-- Кавычки `„…"`. Если в тексте уже стоит `»…«` — не трогает.
-- NBSP перед единицами и валютой.
-- Десятичная запятая не трогается.
+- Quotes `„…“`. If `»…«` is already used in the text — left alone.
+- NBSP before units and currency.
+- Decimal comma is not touched.
 
-### Испанский (`es`)
+### Spanish (`es`)
 
-- Кавычки `“…”` по умолчанию. Если уже стоит `«…»` — не трогает.
-- NBSP перед единицами и валютой.
-- `¿` и `¡` остаются как есть, искусственных пробелов вокруг `:;!?` не добавляется.
+- Quotes `“…”` by default. If `«…»` is already used — left alone.
+- NBSP before units and currency.
+- `¿` and `¡` stay as is, no artificial spaces around `:;!?`.
 
-### BCS (`bs`/`hr`/`sr` латиница)
+### BCS (`bs`/`hr`/`sr` Latin)
 
-- Кавычки нормализуются по встреченному варианту (`«…»` или `„…"`). По умолчанию — `„…"`.
-- NBSP перед единицами и валютой.
+- Quotes normalized to the variant found in text (`«…»` or `„…“`). Default — `„…“`.
+- NBSP before units and currency.
 
-## Что плагин НЕ делает
+## What the plugin does NOT do
 
-- **Не трогает URL и email.** Перед прохождением правил маскируются равной длины placeholder'ами, после — восстанавливаются обратно.
-- **Не ломает переносы строк.** `\n` сохраняется, склейка через перенос не делается.
-- **Не лезет в LaTeX/MathML-блоки.** Только короткие inline-операнды вида `a^2`, `1/2`, `lim(x→0)`.
-- **Не редактирует символьное выделение внутри узла.** Только текстовые узлы целиком.
-- **Не подключает кастомные шрифты.** Если в узле используется шрифт, недоступный в Figma, такой узел пропускается и попадает в итоговый счётчик `пропущено по шрифту`.
+- **Doesn't touch URLs and emails.** Masked with equal-length placeholders, restored after the rule pass.
+- **Doesn't break line breaks.** `\n` is preserved, no merging across lines.
+- **Doesn't poke LaTeX/MathML blocks.** Only short inline operands.
+- **Doesn't edit character selection inside a node.** Whole text nodes only.
+- **Doesn't ё-fy words with homographs.** So «все» doesn't turn into «всё» where the plural of «весь» was meant.
+- **Doesn't load custom fonts.** Nodes using a font Figma can't access are skipped and counted in the final summary.
 
-## Интерфейс
+## Interface
 
-Окно 320×160 px:
+Window 320×160 px:
 
-- Прогресс-бар.
-- Текущая операция (`Сканирование…`, `Обработка…`, `Отмена…`).
-- Счётчик обработанных узлов: `X / Y`.
-- Кнопка «Отменить» — останавливает после текущего узла; всё, что уже применилось, остаётся (откатывается общим `Ctrl/⌘+Z`).
+- Progress bar.
+- Current operation (`Scanning…`, `Processing…`, `Cancelling…`).
+- Counter of processed nodes: `X / Y`.
+- Cancel button — stops after the current node; whatever has already been applied stays (revert with a single `Ctrl/⌘+Z`).
 
-UI лейблы и финальный notify локализованы под язык Figma. Каждая статистика — отдельное предложение, подсказка про `Ctrl+Z` — на следующей строке:
+The final notify is localized to the Figma UI language:
 
 ```
-Готово. Языки: русский, английский. Изменений: 142. Затронуто узлов: 38.
-Ctrl/⌘+Z — отменить
+Done. Languages: Russian, English. Changes: 142. Nodes affected: 38.
+Ctrl/⌘+Z to undo
 ```
 
-## Локализация
+## Localization
 
-Плагин определяет язык интерфейса Figma через `navigator.language` и поддерживает семь языков:
+UI labels and final notify are localized in seven languages, picked by Figma's `navigator.language`:
 
-| Локаль | Соответствие `navigator.language` |
-|--------|-----------------------------------|
+| Locale | `navigator.language` match |
+|--------|---------------------------|
+| English | `en-*` and any unrecognized locale (fallback) |
 | Русский | `ru-*` |
-| English | `en-*` и любая нераспознанная локаль (фолбэк) |
 | Français | `fr-*` |
 | Українська | `uk-*` |
 | Deutsch | `de-*` |
 | Español | `es-*` |
-| BCS (Bosnian / Croatian / Serbian latin) | `hr-*`, `sr-*`, `bs-*` |
+| BCS (Bosnian / Croatian / Serbian Latin) | `hr-*`, `sr-*`, `bs-*` |
 
-На локализацию завязаны: лейбл текущей операции, кнопка «Отменить», текст финального notify (включая названия определённых в узлах языков) и сообщения об ошибках.
-
-## Установка (для разработки)
+## Install (for development)
 
 ```bash
 npm install
-npm run build       # одноразовая сборка
-npm run dev         # сборка в watch-режиме
+npm run build       # one-shot build
+npm run dev         # watch-mode build
 ```
 
-Затем в Figma desktop → **Plugins → Development → Import plugin from manifest** → выбрать `manifest.json` в корне репозитория.
+Then in Figma desktop → **Plugins → Development → Import plugin from manifest** → pick `manifest.json` at the repo root.
 
-## Тесты
+## Tests
 
 ```bash
-npm test           # один прогон
-npm run test:watch # watch-режим
+npm test            # single run
+npm run test:watch  # watch mode
+npm run showcase    # run the corpus and print before/after output
 ```
 
-После прогона подробная диагностика лежит в `test-results/report.json`: по каждому правилу — входной текст, ожидаемый/полученный результат и точные позиции расхождений с код-пойнтами.
+After `npm test` a detailed diagnostic lands in `test-results/report.json`: per rule — input, expected/actual output and the exact mismatch positions with Unicode code points. `npm run showcase` prints clear before → after for a realistic corpus, highlighting invisible characters.
 
-## Ограничения
+## Limitations
 
-- Селекция работает на уровне узлов целиком, а не отдельных символов внутри узла.
-- Лимит — 2000 текстовых узлов за один запуск; узлы длиннее 5000 символов пропускаются и попадают в финальную сводку.
-- Узлы с недоступными в Figma шрифтами пропускаются.
-- Откат — нативным `Ctrl/⌘+Z` (общая undo-группа на весь прогон).
+- Selection works at the node level, not at individual characters inside a node.
+- Limit — 2000 text nodes per run; nodes longer than 5000 characters are skipped.
+- Nodes with unavailable Figma fonts are skipped.
+- Undo — native `Ctrl/⌘+Z` (one undo group per run).
