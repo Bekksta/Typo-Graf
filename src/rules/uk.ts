@@ -8,8 +8,10 @@ import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
 
+// \b в JS не понимает границ Unicode-слов даже с флагом 'u' — используем
+// явный lookbehind по non-letter/non-digit.
 const SHORT_PREP_RE = new RegExp(
-  `\\b(в|у|з|із|й|та|а|і)${SP_ANY_SRC}+(?=\\S)`,
+  `(?<![\\p{L}\\p{N}])(в|у|з|із|й|та|а|і)${SP_ANY_SRC}+(?=\\S)`,
   "giu"
 );
 

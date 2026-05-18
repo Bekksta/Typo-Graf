@@ -107,7 +107,21 @@ function planReplacements(before: string, lang: Language): Replacement[] | null 
   const out: Replacement[] = [];
   for (const seg of segments) {
     if (seg.text.length > MAX_SEGMENT_LENGTH) return null;
-    const after = transformSegment(seg.text, lang);
+
+    // Если сразу за сегментом начинается маска URL/email — добавляем
+    // один PUA-символ как «контекст справа», чтобы lookahead-ы правил
+    // (предлоги, абревиатуры) видели его как непробельный «следующий».
+    // После прохода правил суффикс удаляем; диффуем уже без него.
+    const maskAfter = masks.find((m) => m.start === seg.end);
+    const suffix = maskAfter ? maskAfter.placeholder[0] : "";
+    const padded = suffix ? seg.text + suffix : seg.text;
+
+    const transformed = transformSegment(padded, lang);
+    const after =
+      suffix && transformed.endsWith(suffix)
+        ? transformed.slice(0, -1)
+        : transformed;
+
     if (after === seg.text) continue;
     const local = diffLCS(seg.text, after);
     for (const r of local) {

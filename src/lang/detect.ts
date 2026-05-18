@@ -4,9 +4,11 @@ const CYR = /[Ѐ-ӿ]/;
 const LAT = /[A-Za-z]/;
 
 // Маркеры языка по диакритикам/уникальным символам.
+// fr НЕ включает ä/ö/ü/ß — они однозначно немецкие; иначе "Schöne Grüße"
+// определялся как fr из-за ü/ö, общих с de.
 const HAS = {
-  es: /[ñáéíóúü¿¡]/i,
-  fr: /[çàâäæèéêëîïôœùûüÿ]|«|»/i,
+  es: /[ñáíóú¿¡]/i,
+  fr: /[çàâæèéêëîïôœùûÿ]|«|»/i,
   de: /[äöüß]/,
   uk: /[іїєґ]/i,
   bcs: /[čćšđž]/i,
@@ -23,8 +25,8 @@ export function detectLanguage(text: string): Language {
     if (HAS.srCy.test(text)) return "ru"; // sr-Cyrl → правила ru (без ё)
     return "ru";
   }
-  if (HAS.fr.test(text)) return "fr";
   if (HAS.de.test(text)) return "de";
+  if (HAS.fr.test(text)) return "fr";
   if (HAS.es.test(text)) return "es";
   if (HAS.bcs.test(text)) return "bcs";
   if (LAT.test(text)) return "en";

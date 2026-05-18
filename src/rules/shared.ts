@@ -3,7 +3,13 @@ export function makeNumberUnitRegex(opts: { units?: string[]; currencies?: strin
   const units = (opts.units ?? []).join("|");
   const curr = (opts.currencies ?? []).join("|");
   const tail = [units, curr].filter(Boolean).join("|");
-  return new RegExp(`(\\d[\\d\\s.,]*)\\s+(${tail})\\b`, "g");
+  // Заменяем \b на явный negative lookahead: \b после '%', '€', '$' и пр.
+  // в JS не срабатывает (это не word-боундари). Универсальный признак конца
+  // юнита — отсутствие алфавитно-цифрового продолжения.
+  return new RegExp(
+    `(\\d[\\d\\s.,]*)\\s+(${tail})(?![A-Za-zЀ-ӿ0-9])`,
+    "g"
+  );
 }
 
 const SI_UNITS = [

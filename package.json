@@ -4,11 +4,14 @@
   "private": true,
   "scripts": {
     "build": "esbuild src/main.ts --bundle --platform=node --target=es2017 --outfile=dist/main.js && node -e \"require('fs').mkdirSync('dist',{recursive:true});require('fs').copyFileSync('src/ui.html','dist/ui.html')\"",
-    "dev": "npm run build -- --watch"
+    "dev": "npm run build -- --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.118.0",
     "esbuild": "^0.24.0",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.9"
   }
 }

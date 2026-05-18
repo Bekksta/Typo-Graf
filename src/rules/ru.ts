@@ -14,7 +14,7 @@ export function glueShortPreps(text: string): string {
   const re = new RegExp(
     `(^|[\\s(>])(${SERVICE_WORDS.join(
       "|"
-    )})(?:${SP_ANY_SRC})(?=[A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\xAB])`,
+    )})(?:${SP_ANY_SRC})(?=[A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\xAB\uE000-\uF8FF])`,
     "gmi"
   );
   return text.replace(re, (_m, pre, w) => pre + w + NBSP);
