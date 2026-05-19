@@ -85,12 +85,16 @@ export function nbspAfterAbbr(text: string): string {
     (_m, abbr) => abbr + NBSP
   );
 
-  // Общая логика: служебные клеим ВСЕГДА; единицы — не клеим, если далее цифра
+  // Общая логика: служебные клеим ВСЕГДА; единицы — не клеим, если далее цифра.
+  // Lookbehind `(?<![\p{L}\p{N}])` гарантирует, что сокращение стоит
+  // отдельно — иначе хвост любого слова на `-те.`/`-г.`/`-п.` ловился бы
+  // как аббревиатура. Это же закрывает кейс «гг.» автоматически: при
+  // попытке сматчить второй `г.` слева стоит `г` (буква) — не подходит.
   const reAbbrDot = new RegExp(
-    `(?:(${DOT_UNIT_ABBR.join("|")})|(${DOT_GENERIC_ABBR.join(
+    `(?<![\\p{L}\\p{N}])(?:(${DOT_UNIT_ABBR.join("|")})|(${DOT_GENERIC_ABBR.join(
       "|"
     )}))\\.(?:${SP_ANY_SRC}+)(?=\\S)`,
-    "gi"
+    "giu"
   );
   out = out.replace(
     reAbbrDot,
@@ -100,11 +104,13 @@ export function nbspAfterAbbr(text: string): string {
       _generic: string | undefined,
       off: number
     ) => {
-      // Защита от ложного срабатывания на втором `г`/`в` внутри `гг.`/`вв.`.
-      // Это закрывающие сокращения «годами»/«веками» — NBSP после них не
-      // нужен, пусть слово на следующей строке начинается с нового места.
-      if ((unit === "г" || unit === "в") && off > 0 && out[off - 1] === unit) {
-        return m;
+      // PREV non-space char: если слева цифра, аббревиатура замыкает число
+      // («1991 г.», «5 кг.») — NBSP справа не нужен.
+      let pi = off - 1;
+      while (pi >= 0 && SP_ANY_CLASS.test(out[pi])) pi--;
+      const prev = pi >= 0 ? out[pi] : "";
+      if (unit && /\d/.test(prev)) {
+        return m.replace(/\u00A0/g, " ");
       }
       let i = off + m.length;
       while (i < out.length && SP_ANY_CLASS.test(out[i])) i++;
