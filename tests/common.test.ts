@@ -52,7 +52,7 @@ describe("common: number + unit (NBSP)", () => {
   test("%", () => E("numUnitRu", "300 ₽", "300" + NBSP + "₽"));
   test("digit + г.код — abbreviation 'г.' is glued (lookahead allows '.')", () =>
     E("numUnitRu", "12 г.код", `12${NBSP}г.код`));
-  test("гг.: 1991 гг. → NBSP перед", () =>
+  test("гг.: 1991 гг. → NBSP перед (после — обычный пробел, гг. не висячая)", () =>
     E("ggYearAbbr", "1991 гг.", `1991${NBSP}гг.`));
   test("вв.: XX вв. (после римской цифры — не наш случай, только цифровые)", () =>
     E("vvCenturyAbbr", "9 вв.", `9${NBSP}вв.`));

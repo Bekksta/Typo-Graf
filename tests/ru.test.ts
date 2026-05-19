@@ -95,6 +95,20 @@ describe("ru: date ranges (em-dash, no spaces)", () => {
     E("noNumRange", "10-12", "10-12"));
 });
 
+describe("ru: гг./вв. — NBSP только перед, НЕ после", () => {
+  // Регресс-тест: второй `г` в `гг.` не должен распознаваться как
+  // самостоятельное «год.» и получать NBSP справа.
+  test("1991 гг. произошло — NBSP только перед гг.", () => {
+    const run = (s: string) => {
+      const t = applyRussianRules(s);
+      return t;
+    };
+    const out = run("1991 гг. произошло");
+    // ожидаем: после `гг.` остаётся обычный пробел
+    expectTransform(M, "noNbspAfterGg", "1991 гг. произошло", "1991 гг. произошло", run);
+  });
+});
+
 describe("ru: и/или normalization", () => {
   test("'и / или' → 'и/или' (без пробелов)", () =>
     E("andOr", "и / или", "и/или"));

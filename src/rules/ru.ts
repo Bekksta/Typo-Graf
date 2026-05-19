@@ -99,6 +99,12 @@ export function nbspAfterAbbr(text: string): string {
       _generic: string | undefined,
       off: number
     ) => {
+      // Защита от ложного срабатывания на втором `г`/`в` внутри `гг.`/`вв.`.
+      // Это закрывающие сокращения «годами»/«веками» — NBSP после них не
+      // нужен, пусть слово на следующей строке начинается с нового места.
+      if ((unit === "г" || unit === "в") && off > 0 && out[off - 1] === unit) {
+        return m;
+      }
       let i = off + m.length;
       while (i < out.length && SP_ANY_CLASS.test(out[i])) i++;
       const next = out[i] || "";

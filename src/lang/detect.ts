@@ -3,36 +3,39 @@ import { Language } from "../types";
 const CYR_LETTER = /[Ѐ-ӿ]/;
 const LAT_LETTER = /[A-Za-z]/;
 
-// Маркеры языка по диакритикам/уникальным символам.
-// fr НЕ включает ä/ö/ü/ß — они однозначно немецкие; иначе "Schöne Grüße"
-// определялся как fr из-за ü/ö, общих с de.
-const HAS = {
-  es: /[ñáíóú¿¡]/i,
-  fr: /[çàâæèéêëîïôœùûÿ]|«|»/i,
-  de: /[äöüß]/,
-  uk: /[іїєґ]/i,
-  bcs: /[čćšđž]/i,
-  // it: ò и ì — грав-акценты на o/i, уникальные для итальянского.
-  // (французский использует ô î с circumflex, не grave). à/è/é/ù — общие
-  // с французским и не дискриминируют надёжно, поэтому НЕ маркеры.
-  it: /[òì]/i,
-  // pl: характерные польские диакритики ą ć ę ł ń ś ź ż.
-  pl: /[ąćęłńśźż]/i,
-  // pt: ã и õ — назальные тильды, уникальные для португальского
-  // (испанский использует ñ, не ã/õ).
-  pt: /[ãõ]/i,
-  // nl: голландский редко использует диакритики; распознаём по характерным
-  // частотным словам (het, een, van, zijn, niet, maar). Не идеально, но
-  // выручает для типичных голландских макетов.
-  nl: /\b(het|een|van|zijn|niet|maar|onze|wij)\b/i,
-  // ђћјљњ — характерные сербские кириллические буквы
-  srCy: /[ђћјљњ]/i,
-};
+// Кириллические маркеры (уникальные для языка).
+const HAS_UK = /[іїєґ]/i;
+const HAS_SR_CY = /[ђћјљњ]/i;
 
-// «Доминирующий скрипт»-подход: считаем кириллические и латинские буквы;
-// больше — побеждает. Это исправляет старое поведение, когда «It's awesome,
-// but мир» определялся как ru (по первому встреченному маркеру), хотя
-// английского текста в нём намного больше.
+// Принцип: сначала ищем 100%-уникальные маркеры (символ, который в других
+// поддерживаемых языках не встречается). Если нашли — мгновенный возврат,
+// без скоринга. Если уникального маркера нет — переходим к soft-scoring
+// по характерным, но общим с другими языками диакритикам.
+
+// 100%-уникальные маркеры. Порядок не важен — каждый язык обособлен.
+const UNIQUE: Array<{ lang: Language; re: RegExp }> = [
+  { lang: "de", re: /[äöüß]/i },     // ä ö ü ß — однозначно немецкие
+  { lang: "es", re: /[ñ¿¡]/i },      // ñ ¿ ¡ — однозначно испанские
+  { lang: "it", re: /[òì]/i },        // ò ì (грав на o/i) — итальянские
+  { lang: "pl", re: /[ąęłńśźż]/i },  // ć опускаем — пересекается с bcs/hr
+  { lang: "pt", re: /[ãõ]/i },        // ã õ (назальные тильды) — португальские
+  { lang: "fr", re: /[çœÿæ]/i },     // ç œ ÿ æ — французские
+  { lang: "bcs", re: /[čšž]/i },     // č š ž — bcs (ć/đ опускаем — overlap с pl)
+];
+
+// Soft-маркеры: общие диакритики, по которым скорим на ничье/неуверенности.
+// Порядок задаёт приоритет на ничьих (первый в списке выигрывает).
+const SOFT: Array<{ lang: Language; re: RegExp }> = [
+  { lang: "es", re: /[áíóúü]/gi },
+  { lang: "fr", re: /[àâèéêëîïôùû]/gi },
+  { lang: "it", re: /[àèìòù]/gi },
+  { lang: "pt", re: /[âêô]/gi },
+  { lang: "pl", re: /[ó]/gi },
+];
+
+// Голландский — по частотным служебным словам, диакритики редки.
+const HAS_NL = /\b(het|een|van|zijn|niet|maar|onze|wij)\b/gi;
+
 function countScripts(text: string): { cyr: number; lat: number } {
   let cyr = 0;
   let lat = 0;
@@ -43,33 +46,51 @@ function countScripts(text: string): { cyr: number; lat: number } {
   return { cyr, lat };
 }
 
+function detectByUnique(text: string): Language | null {
+  for (const { lang, re } of UNIQUE) {
+    if (re.test(text)) return lang;
+  }
+  return null;
+}
+
+function detectBySoftScore(text: string): Language | null {
+  let best: Language | null = null;
+  let bestScore = 0;
+  for (const { lang, re } of SOFT) {
+    const m = text.match(re);
+    const score = m ? m.length : 0;
+    if (score > bestScore) {
+      best = lang;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
 export function detectLanguage(text: string): Language {
   const { cyr, lat } = countScripts(text);
 
-  // Если кириллицы строго больше — кириллический путь.
-  // Тай (cyr === lat > 0) разрешаем в пользу кириллицы — практичный дефолт.
+  // Кириллическая ветка. Уникальные маркеры → мгновенный возврат.
+  // `Љ`/`Њ` и др. — однозначно сербская кириллица; счёт не нужен.
   if (cyr > 0 && cyr >= lat) {
-    if (HAS.uk.test(text)) return "uk";
-    if (HAS.srCy.test(text)) return "sr-Cyrl";
+    if (HAS_SR_CY.test(text)) return "sr-Cyrl";
+    if (HAS_UK.test(text)) return "uk";
     return "ru";
   }
 
-  // Если латиницы больше (или кириллицы нет) — латинский путь.
-  // Проверяем уникальные маркеры в порядке убывания специфичности.
   if (lat > 0) {
-    if (HAS.de.test(text)) return "de";
-    if (HAS.it.test(text)) return "it";
-    if (HAS.pl.test(text)) return "pl";
-    // pt: ã/õ — характерны для португальского, в др. латинских языках почти
-    // не встречаются. Проверяем до es, чтобы «São Paulo» не пошло как es.
-    if (HAS.pt.test(text)) return "pt";
-    if (HAS.fr.test(text)) return "fr";
-    if (HAS.es.test(text)) return "es";
-    if (HAS.bcs.test(text)) return "bcs";
-    if (HAS.nl.test(text)) return "nl";
+    // 1) Уникальные маркеры — мгновенный return.
+    const unique = detectByUnique(text);
+    if (unique) return unique;
+    // 2) Скоринг по общим диакритикам (например, é/à/è).
+    const soft = detectBySoftScore(text);
+    if (soft) return soft;
+    // 3) Голландский по частотным служебным словам.
+    if (HAS_NL.test(text)) return "nl";
+    // 4) Латиница без признаков → английский.
     return "en";
   }
 
-  // Фолбэк: нет ни кириллицы, ни латиницы — считаем русским.
+  // Нет ни кириллицы, ни латиницы — фолбэк на русский.
   return "ru";
 }

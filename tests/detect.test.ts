@@ -61,6 +61,15 @@ describe("detect: latin scripts", () => {
     expectLang("sr-Cyrl", "Љубав је највећа", "sr-Cyrl"));
 });
 
+describe("detect: es-strong vs fr (overlap on é/è/à...)", () => {
+  test("'Él dijo en español' → es (ñ — strong es marker)", () =>
+    expectLang("esVsFr", "Él dijo en español", "es"));
+  test("'Cómo estás?' → es (¿/¡ или ñ перевешивают)", () =>
+    expectLang("esVsFrPunct", "Cómo estás? Él respondió.", "es"));
+  test("'café français' (без es-маркеров) → fr", () =>
+    expectLang("frPure", "café français est bon", "fr"));
+});
+
 describe("detect: mixed scripts — dominant wins", () => {
   test("основной текст английский + одно русское слово → en", () =>
     expectLang("dominantEn", "It is awesome, but мир exists", "en"));
