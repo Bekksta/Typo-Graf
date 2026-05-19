@@ -70,6 +70,17 @@ describe("detect: es-strong vs fr (overlap on é/è/à...)", () => {
     expectLang("frPure", "café français est bon", "fr"));
 });
 
+describe("detect: word-list scoring catches ambiguous cases", () => {
+  test("italian without ò/ì but with 'perché' — это it", () =>
+    expectLang("itWords", "Andiamo perché è bello a casa", "it"));
+  test("dutch without diacritics — 'Het is een' выигрывает", () =>
+    expectLang("nlWords", "Het is een mooie dag", "nl"));
+  test("'der die das und' — это de даже без ä/ö/ü/ß", () =>
+    expectLang("deWords", "der Mann und die Frau", "de"));
+  test("'jest się że' — pl", () =>
+    expectLang("plWords", "to jest tylko ten przykład", "pl"));
+});
+
 describe("detect: mixed scripts — dominant wins", () => {
   test("основной текст английский + одно русское слово → en", () =>
     expectLang("dominantEn", "It is awesome, but мир exists", "en"));

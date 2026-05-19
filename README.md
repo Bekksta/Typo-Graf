@@ -25,22 +25,25 @@ Limit per run — 2000 nodes. Nodes with text longer than 5000 characters are sk
 
 ## Languages
 
-Detected automatically per text layer, by **dominant script + characteristic diacritics**. URLs and emails are masked before detection, so they don't tip the count:
+Detected automatically per text layer in two stages. URLs and emails are masked before detection, so addresses don't tip the result:
 
-| Language | Markers |
-|----------|---------|
-| `ru` | Cyrillic (fallback) |
-| `uk` | `і ї є ґ` |
-| `sr-Cyrl` | `ђ ћ ј љ њ` (Serbian Cyrillic) |
-| `en` | Latin (fallback) |
-| `fr` | `ç à â æ è ê î ï ô œ û ÿ` |
-| `de` | `ä ö ü ß` |
-| `es` | `ñ á í ó ú ¿ ¡` |
-| `it` | `ò ì` (grave on o/i — unique to Italian) |
-| `pl` | `ą ć ę ł ń ś ź ż` |
-| `pt` | `ã õ` (nasal tildes) |
-| `nl` | frequent words: `het`, `een`, `van`, `zijn`, `niet`, `maar` |
-| `bcs` | `č ć š đ ž` (`bs`/`hr`/`sr` Latin) |
+1. **Unique markers** — if a text contains a character that's used in only one of the supported languages, that language wins immediately. No counting needed.
+2. **Soft scoring** — if no unique marker is found, the plugin sums two signals per language: shared diacritics (`é`, `à`, `è`, …) at weight 1 per char, and frequent characteristic words (`perché`, `der/die/das`, `het/een`, …) at weight 5 per word. Highest score wins. Ties go by a priority approximating worldwide speaker counts: `en` > `es` > `pt` > `fr` > `de` > `it` > `pl` > `nl`.
+
+| Language | Unique markers (instant) | Soft markers (scoring) |
+|----------|--------------------------|------------------------|
+| `ru` | Cyrillic (fallback) | — |
+| `uk` | `і ї є ґ` | — |
+| `sr-Cyrl` | `ђ ћ ј љ њ` | — |
+| `en` | Latin (fallback) | — |
+| `de` | `ä ö ü ß` | — |
+| `es` | `ñ ¿ ¡` | `á í ó ú ü` |
+| `fr` | `ç œ ÿ æ` | `à â è é ê ë î ï ô ù û` |
+| `it` | `ò ì` (grave on o/i) | `à è ì ò ù` |
+| `pt` | `ã õ` (nasal tildes) | `â ê ô` |
+| `pl` | `ą ę ł ń ś ź ż` | `ó` |
+| `nl` | frequent words: `het`, `een`, `van`, `zijn`, `niet`, `maar` | — |
+| `bcs` | `č š ž` (`bs`/`hr`/`sr` Latin) | — |
 
 For mixed scripts the **dominant** wins (Cyrillic vs Latin letter count). E.g. «It is awesome, but мир exists» → `en`, «Привет, hello, как дела?» → `ru`. Ties go to Cyrillic.
 
@@ -78,7 +81,8 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 - NBSP after short prepositions and conjunctions: `в дом`, `на улице`, `и т. п.`
 - NBSP before particles `бы`, `ли`, `же`.
 - Initials: `А. С. Пушкин` — NBSP between initials and surname.
-- Abbreviations with a dot: `г. Москва`, `ул. Ленина`, `№ 8`, `§ 104`, `1981 г.`, `1991 гг.`, `9 вв.` — NBSP after.
+- Abbreviations with a dot: `г. Москва`, `ул. Ленина`, `№ 8`, `§ 104`, `1981 г.` — NBSP after.
+- Year/century closing abbreviations `гг.` / `вв.` — NBSP **before** only (to keep `1991<NBSP>гг.` together), regular space after (these are closing tokens, breaking before the next word is fine).
 - Compound abbreviations: `и т. д.`, `т. е.`, `до н. э.` — normalized together with NBSP.
 - Hyphenated abbreviations without a dot: `г-н`, `г-жа`, `д-р`, `р-н` — non-breaking hyphen (U+2011) inside and NBSP after.
 - Angle quotes `«…»`. Punctuation pulled inside the closing quote.
