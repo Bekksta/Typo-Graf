@@ -41,6 +41,18 @@ describe("pipeline: URL/email guarded", () => {
   );
 });
 
+describe("pipeline: гг./вв. — NBSP только перед, после обычный пробел", () => {
+  test("'1991 гг. Учёт' — между гг. и Учёт regular space (не NBSP)", () => {
+    const out = runPipeline("1991 гг. Учёт", "ru");
+    const gg = out.indexOf("гг.");
+    const after = out.charCodeAt(gg + 3);
+    if (after !== 0x20) {
+      throw new Error(`expected regular space after гг., got U+${after.toString(16)}`);
+    }
+    expectTransform(M, "noNbspAfterGgFull", "1991 гг. Учёт", out, () => out);
+  });
+});
+
 describe("pipeline: brand whitelist guarded", () => {
   test("'JavaScript' — не дробится никакими правилами", () =>
     E("brandJs", "Изучаем JavaScript всю жизнь.", `Изучаем JavaScript всю жизнь.`));

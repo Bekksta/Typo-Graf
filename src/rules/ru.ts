@@ -75,6 +75,7 @@ export function nbspAfterAbbr(text: string): string {
     while (i >= 0 && SP_ANY_CLASS.test(out[i])) i--;
     const prev = i >= 0 ? out[i] : "";
     if (/\d/.test(prev)) return m; // это "год", не трогаем тут
+    if (prev === "г") return m;    // второй "г" в "гг." — пропускаем
     return "г." + NBSP;
   });
 
