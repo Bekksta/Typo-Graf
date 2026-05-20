@@ -26,7 +26,7 @@ describe("pipeline: URL/email guarded", () => {
 
   test(
     "email passes through untouched + 'на' before email — KNOWN BUG: " +
-      "glueShortPreps lookahead не пропускает PUA-плейсхолдеры",
+      "glueProclitics lookahead не пропускает PUA-плейсхолдеры",
     () => {
       const email = "foo@bar.com";
       const out = runPipeline(`пишите на ${email} сегодня`);

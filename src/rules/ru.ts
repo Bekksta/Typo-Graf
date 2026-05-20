@@ -2,17 +2,19 @@ import {
   HYPHEN_ABBR,
   DOT_UNIT_ABBR,
   DOT_GENERIC_ABBR,
-  SERVICE_WORDS,
+  PROCLITICS,
   COMPOSITE_ABBR_RULES,
 } from "../lib/ruLib";
 import { NBSP, NBH, SP_ANY_CLASS, SP_ANY_SRC, EM_DASH } from "../lang/maps";
 import { preserveCase } from "../lib/commonCase";
 import { applyYoFix } from "./yoPairs";
 
-// 5.1 Короткие предлоги/частицы → NBSP после
-export function glueShortPreps(text: string): string {
+// 5.1 Проклитики (короткие предлоги/союзы/forward-частицы) → NBSP справа.
+// Парная функция — `glueParticles` ниже (энклитики `бы/ли/же/ль`, NBSP слева).
+// Пересечение списков запрещено: слово либо тянет вправо, либо влево.
+export function glueProclitics(text: string): string {
   const re = new RegExp(
-    `(^|[\\s(>])(${SERVICE_WORDS.join(
+    `(^|[\\s(>])(${PROCLITICS.join(
       "|"
     )})(?:${SP_ANY_SRC})(?=[A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\xAB\uE000-\uF8FF])`,
     "gmi"
@@ -173,10 +175,13 @@ export function normalizeCompositeAbbr(text: string): string {
   return out;
 }
 
-// 5.7 Частицы бы/ли/же — NBSP перед
+// 5.7 Постпозитивные частицы (энклитики) бы/ли/же/ль — NBSP перед.
+// Парная функция — `glueProclitics` выше (forward-clitic, NBSP справа).
+// Список замкнутый: эти 4 частицы по Лебедеву §32 тянутся к слову СЛЕВА,
+// поэтому жить им можно только здесь и нигде больше.
 export function glueParticles(text: string): string {
   return text.replace(
-    /([А-ЯЁа-яёA-Za-z]{2,})[ \u00A0\u2009\u202F\t]+(бы|ли|же)(?=[^А-Яа-яЁёA-Za-z]|$)/gi,
+    /([А-ЯЁа-яёA-Za-z]{2,})[ \u00A0\u2009\u202F\t]+(бы|ли|же|ль)(?=[^А-Яа-яЁёA-Za-z]|$)/gi,
     (_m, w, p) => w + NBSP + p
   );
 }
@@ -204,7 +209,7 @@ export function normalizeEmDash(text: string): string {
   return out;
 }
 
-// 5.10 Диапазоны дат: годы и месяцы → em-dash без пробелов (Лебедев).
+// 5.10 Диапазоны дат: годы и месяцы → em-dash без пробелов.
 const MONTHS_RU = [
   "январь", "февраль", "март", "апрель", "май", "июнь",
   "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
@@ -280,7 +285,7 @@ export function applyRussianRules(
 
   // Порядок важен!
   text = fixInitials(text); // 5.2
-  text = glueShortPreps(text); // 5.1
+  text = glueProclitics(text); // 5.1
   text = normalizeCompositeAbbr(text); // 5.6 (до кавычек/тире)
   text = nbspAfterAbbr(text); // 5.4
   text = smartQuotesRu(text); // 5.3

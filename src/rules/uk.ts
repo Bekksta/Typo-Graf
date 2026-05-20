@@ -10,7 +10,7 @@ const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
 
 // \b в JS не понимает границ Unicode-слов даже с флагом 'u' — используем
 // явный lookbehind по non-letter/non-digit.
-const SHORT_PREP_RE = new RegExp(
+const PROCLITICS_RE = new RegExp(
   `(?<![\\p{L}\\p{N}])(в|у|з|із|й|та|а|і)${SP_ANY_SRC}+(?=\\S)`,
   "giu"
 );
@@ -48,7 +48,7 @@ function groupThousandsUk(text: string): string {
 export function applyUkrainianRules(input: string): string {
   let t = input;
   t = placeGuillemetsUk(t);
-  t = t.replace(SHORT_PREP_RE, (_m, w: string) => w + NBSP);
+  t = t.replace(PROCLITICS_RE, (_m, w: string) => w + NBSP);
   t = t.replace(TOKEN_NUM_RE, (_m, tok: string) => tok + NNBSP);
   // Число + единица/валюта/% → NNBSP
   t = t.replace(UNIT_RE, (m, n: string) => {

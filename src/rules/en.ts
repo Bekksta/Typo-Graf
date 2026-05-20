@@ -11,7 +11,7 @@ import {
   L_SQ,
   R_SQ,
 } from "../lang/maps";
-import { SERVICE_WORDS, UNIT_LIST } from "../lib/enLib";
+import { PROCLITICS, UNIT_LIST } from "../lib/enLib";
 
 // ===== 1) Праймы: 12'' / 12" → 12″ ; 12' → 12′ =====
 const DBL_PRIME_RE = new RegExp(
@@ -145,22 +145,22 @@ function normalizeRangesEn(text: string): string {
   return text.replace(RANGE_RE, `$1${EN_DASH}$2`);
 }
 
-// ===== 6) NBSP после служебных слов =====
+// ===== 6) NBSP после проклитик (артиклей/предлогов/союзов) =====
 // NB: в ТЗ §3.3 явно "Артикли/предлоги НЕ склеиваем NBSP".
 //     В разделе "Готовый функционал" — обратное. Оставлено по факту реализации,
 //     требует подтверждения у владельца продукта.
-const SERVICE_RE = SERVICE_WORDS.length
+const PROCLITICS_RE = PROCLITICS.length
   ? new RegExp(
-      `\\b(${SERVICE_WORDS.map((w) =>
+      `\\b(${PROCLITICS.map((w) =>
         w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
       ).join("|")})${SP_ANY_SRC}+(?=\\S)`,
       "gi"
     )
   : null;
 
-function gluePrepsAndConjs(text: string): string {
-  if (!SERVICE_RE) return text;
-  return text.replace(SERVICE_RE, (_m, w) => w + NBSP);
+function glueProclitics(text: string): string {
+  if (!PROCLITICS_RE) return text;
+  return text.replace(PROCLITICS_RE, (_m, w) => w + NBSP);
 }
 
 // English honorifics: Dr./Mr./Mrs./Ms./Prof./St./Sr./Jr./Rev./Capt./Lt./Col./Gen.
@@ -197,6 +197,6 @@ export function applyEnglishRules(input: string): string {
   t = tightenUnitsAndPercentsEn(t);
   t = tightenLatinAbbrs(t);
   t = tightenHonorifics(t);
-  t = gluePrepsAndConjs(t);
+  t = glueProclitics(t);
   return t;
 }

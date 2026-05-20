@@ -1,5 +1,5 @@
-// Служебные слова (предлоги/союзы/частицы), после которых ставим NBSP
-export const SERVICE_WORDS = [
+// PROCLITICS — слова, тянущие к себе следующее слово. NBSP справа.
+export const PROCLITICS = [
   "a",
   "an",
   "the",

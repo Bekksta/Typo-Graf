@@ -78,8 +78,8 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 
 ### Russian (`ru`)
 
-- NBSP after short prepositions and conjunctions: `в дом`, `на улице`, `и т. п.`
-- NBSP before particles `бы`, `ли`, `же`.
+- NBSP after proclitics — short prepositions, conjunctions, and forward-binding particles: `в дом`, `на улице`, `и т. п.`, `даже он`.
+- NBSP before enclitic particles `бы`, `ли`, `же`, `ль` — they bind to the **previous** word only. Example: `всё было бы иначе` → `всё было<NBSP>бы иначе` (so `иначе` can still wrap). The proclitic and enclitic lists never overlap by design.
 - Initials: `А. С. Пушкин` — NBSP between initials and surname.
 - Abbreviations with a dot: `г. Москва`, `ул. Ленина`, `№ 8`, `§ 104`, `1981 г.` — NBSP after.
 - Year/century closing abbreviations `гг.` / `вв.` — NBSP **before** only (to keep `1991<NBSP>гг.` together), regular space after (these are closing tokens, breaking before the next word is fine).

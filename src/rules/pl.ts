@@ -14,7 +14,7 @@ const UNIT_RE = makeNumberUnitRegex({
 
 // Однобуквенные предлоги и союзы, после которых ставится NBSP.
 // Включаем варианты 'ze', 'we' — фонетические формы 'z/w' перед стечениями согласных.
-const SHORT_PREP_RE = new RegExp(
+const PROCLITICS_RE = new RegExp(
   `(?<![\\p{L}\\p{N}])(i|a|o|u|w|z|ze|we)${SP_ANY_SRC}+(?=[\\p{L}\\p{N}])`,
   "giu"
 );
@@ -49,7 +49,7 @@ function groupThousandsPl(text: string): string {
 export function applyPolishRules(input: string): string {
   let t = input;
   t = placePolishQuotes(t);
-  t = t.replace(SHORT_PREP_RE, (_m, w: string) => w + NBSP);
+  t = t.replace(PROCLITICS_RE, (_m, w: string) => w + NBSP);
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });

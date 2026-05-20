@@ -10,7 +10,7 @@ import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
 
 // Короткие предлоги/союзы/артикли. ё-стиль (как ru): NBSP после.
-const SERVICE_WORDS = [
+const PROCLITICS = [
   // артикли
   "il", "la", "lo", "i", "gli", "le", "un", "una", "uno",
   // предлоги
@@ -21,8 +21,8 @@ const SERVICE_WORDS = [
 
 // \b в JS не понимает Unicode-границы слов даже с 'u' — используем явный
 // lookbehind по non-letter/non-digit. Регистронезависимо (Il/IL/il/...).
-const SHORT_PREP_RE = new RegExp(
-  `(?<![\\p{L}\\p{N}])(${SERVICE_WORDS.join("|")})${SP_ANY_SRC}+(?=[\\p{L}\\p{N}])`,
+const PROCLITICS_RE = new RegExp(
+  `(?<![\\p{L}\\p{N}])(${PROCLITICS.join("|")})${SP_ANY_SRC}+(?=[\\p{L}\\p{N}])`,
   "giu"
 );
 
@@ -62,7 +62,7 @@ function groupThousandsIt(text: string): string {
 export function applyItalianRules(input: string): string {
   let t = input;
   t = placeItalianQuotes(t);
-  t = t.replace(SHORT_PREP_RE, (_m, w: string) => w + NBSP);
+  t = t.replace(PROCLITICS_RE, (_m, w: string) => w + NBSP);
   t = t.replace(DOT_ABBR_RE, (_m, abbr: string) => abbr + "." + NBSP);
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
