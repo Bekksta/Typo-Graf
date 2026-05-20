@@ -4,7 +4,6 @@ import { expectTransform } from "./_helpers/expect";
 
 const NBSP = " ";
 const NNBSP = " ";
-const EM_DASH = "—";
 
 const M = "pipeline";
 function E(rule: string, input: string, expected: string): void {
@@ -12,33 +11,43 @@ function E(rule: string, input: string, expected: string): void {
 }
 
 describe("pipeline: URL/email guarded", () => {
-  test("URL passes through untouched (см. — abbr, glued with NBSP)", () => {
+  test("URL passes through untouched + abbr NOT glued to URL (PUA opaque)", () => {
     const url = "https://site.com/a-b?x=1...";
     const out = runPipeline(`см. ${url}`);
     expectTransform(
       M,
       "urlUntouched",
       `см. ${url}`,
-      `см.${NBSP}${url}`,
+      `см. ${url}`,
       () => out
     );
   });
 
-  test(
-    "email passes through untouched + 'на' before email — KNOWN BUG: " +
-      "glueProclitics lookahead не пропускает PUA-плейсхолдеры",
-    () => {
-      const email = "foo@bar.com";
-      const out = runPipeline(`пишите на ${email} сегодня`);
-      expectTransform(
-        M,
-        "emailUntouched",
-        `пишите на ${email} сегодня`,
-        `пишите на${NBSP}${email} сегодня`,
-        () => out
-      );
-    }
-  );
+  test("email passes through untouched + proclitic NOT glued to email", () => {
+    const email = "foo@bar.com";
+    const out = runPipeline(`пишите на ${email} сегодня`);
+    expectTransform(
+      M,
+      "emailUntouched",
+      `пишите на ${email} сегодня`,
+      `пишите на ${email} сегодня`,
+      () => out
+    );
+  });
+});
+
+describe("pipeline: дата-диапазон с WJ вокруг em-dash — не рвётся в Figma", () => {
+  test("'1799-1837 гг.' — em-dash обёрнут U+2060, NBSP перед гг.", () => {
+    const WJ = "⁠";
+    const out = runPipeline("в 1799-1837 гг.", "ru");
+    expectTransform(
+      M,
+      "yearRangeWj",
+      "в 1799-1837 гг.",
+      `в${NBSP}1799${WJ}—${WJ}1837${NBSP}гг.`,
+      () => out
+    );
+  });
 });
 
 describe("pipeline: гг./вв. — NBSP только перед, после обычный пробел", () => {

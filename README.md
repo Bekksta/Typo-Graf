@@ -83,11 +83,12 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 - Initials: `А. С. Пушкин` — NBSP between initials and surname.
 - Abbreviations with a dot: `г. Москва`, `ул. Ленина`, `№ 8`, `§ 104`, `1981 г.` — NBSP after.
 - Year/century closing abbreviations `гг.` / `вв.` — NBSP **before** only (to keep `1991<NBSP>гг.` together), regular space after (these are closing tokens, breaking before the next word is fine).
-- Compound abbreviations: `и т. д.`, `т. е.`, `до н. э.` — normalized together with NBSP.
+- Compound abbreviations: `и т. д.`, `т. е.`, `до н. э.` — normalized together with NBSP. The trailing single-letter part (the `д.` in `и т. д.`) does **not** glue to whatever follows, so `и т. д. А. С. Пушкин` keeps a regular space between `д.` and the initials.
 - Hyphenated abbreviations without a dot: `г-н`, `г-жа`, `д-р`, `р-н` — non-breaking hyphen (U+2011) inside and NBSP after.
 - Angle quotes `«…»`. Punctuation pulled inside the closing quote.
 - Dashes: double hyphen `--` and single `-` between non-numeric tokens → `—`, with the pattern `word<NBSP>—<space>word`.
-- Date ranges with em-dash, no spaces: `1991-1995` → `1991—1995`, `январь-март` → `январь—март` (works with nominative and genitive month forms).
+- Date ranges with em-dash, no spaces, wrapped in U+2060 (word joiner) to keep the whole range unbreakable in Figma: `1991-1995` → `1991⁠—⁠1995`, `январь-март` → `январь⁠—⁠март`. Without the word joiner, Figma honors UAX#14 and may wrap the line right at the em-dash.
+- Number + quantifier noun (currency, time, date) → NBSP: `5 рублей`, `12 января`, `300 минут`, `1991 году`. A curated list — generic countable nouns like `243 голубя` are **not** glued.
 - Unicode minus `−` (U+2212) for negative financial values: `-300 ₽` → `−300 ₽`, `-15 %` → `−15 %`. Bullet-list hyphens are left alone.
 - `и / или` → `и/или` (no spaces around the slash).
 - Thousands grouping with NBSP for numbers ≥5 digits: `1234567` → `1 234 567`. Years (`1991`) and 4-digit IDs stay.
@@ -178,7 +179,7 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 
 ## What the plugin does NOT do
 
-- **Doesn't touch URLs and emails.** Masked with equal-length placeholders, restored after the rule pass.
+- **Doesn't touch URLs and emails.** Masked with equal-length placeholders, restored after the rule pass. Proclitics and abbreviations before a URL/email are not glued to it — so `см. https://...` and `на foo@bar.com` keep a regular space, leaving the address as an opaque token (and copy-paste keeps it valid).
 - **Doesn't break line breaks.** `\n` is preserved, no merging across lines.
 - **Doesn't poke LaTeX/MathML blocks.** Only short inline operands.
 - **Doesn't edit character selection inside a node.** Whole text nodes only.

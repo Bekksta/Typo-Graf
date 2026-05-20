@@ -4,6 +4,7 @@ import {
   DOT_GENERIC_ABBR,
   PROCLITICS,
   COMPOSITE_ABBR_RULES,
+  QUANTIFIER_NOUNS,
 } from "../lib/ruLib";
 import { NBSP, NBH, SP_ANY_CLASS, SP_ANY_SRC, EM_DASH } from "../lang/maps";
 import { preserveCase } from "../lib/commonCase";
@@ -16,7 +17,7 @@ export function glueProclitics(text: string): string {
   const re = new RegExp(
     `(^|[\\s(>])(${PROCLITICS.join(
       "|"
-    )})(?:${SP_ANY_SRC})(?=[A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\xAB\uE000-\uF8FF])`,
+    )})(?:${SP_ANY_SRC})(?=[A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\xAB])`,
     "gmi"
   );
   return text.replace(re, (_m, pre, w) => pre + w + NBSP);
@@ -103,9 +104,10 @@ export function nbspAfterAbbr(text: string): string {
     (
       m: string,
       unit: string | undefined,
-      _generic: string | undefined,
+      generic: string | undefined,
       off: number
     ) => {
+      const abbr = (unit || generic) as string;
       // PREV non-space char: если слева цифра, аббревиатура замыкает число
       // («1991 г.», «5 кг.») — NBSP справа не нужен.
       let pi = off - 1;
@@ -114,11 +116,34 @@ export function nbspAfterAbbr(text: string): string {
       if (unit && /\d/.test(prev)) {
         return m.replace(/\u00A0/g, " ");
       }
+      // Хвост composite («и т. д.», «т. е.», «до н. э.»): если матч —
+      // однобуквенное сокращение, а слева через пробел стоит ещё одна
+      // одиночная `<буква>.` — это устойчивое сочетание. NBSP справа
+      // ставить нельзя, иначе `и т. д. А. С. Пушкин` склеится в один
+      // чанк. `д. Иванов` (доктор/деревня) продолжит работать — там
+      // слева НЕ composite-хвост.
+      if (abbr.length === 1 && prev === ".") {
+        const prevLetter = pi - 1 >= 0 ? out[pi - 1] : "";
+        const beforeLetter = pi - 2 >= 0 ? out[pi - 2] : "";
+        if (
+          prevLetter &&
+          /\p{L}/u.test(prevLetter) &&
+          (!beforeLetter || !/\p{L}/u.test(beforeLetter))
+        ) {
+          return m.replace(/\u00A0/g, " ");
+        }
+      }
       let i = off + m.length;
       while (i < out.length && SP_ANY_CLASS.test(out[i])) i++;
       const next = out[i] || "";
       if (unit && /\d/.test(next)) {
         // единицы + цифра: НЕ склеиваем справа
+        return m.replace(/\u00A0/g, " ");
+      }
+      // Замаскированный URL/email (PUA U+E000-U+F8FF) — не клеим:
+      // адрес — opaque-токен, «следующим словом» он не считается.
+      const nc = next.charCodeAt(0);
+      if (nc >= 0xe000 && nc <= 0xf8ff) {
         return m.replace(/\u00A0/g, " ");
       }
       // служебные и единицы без цифры — NBSP
@@ -197,11 +222,15 @@ export function normalizeEmDash(text: string): string {
     /([^\d\s])\s[-–]\s([^\d\s])/g,
     (_m, a: string, b: string) => `${a} ${EM_DASH} ${b}`
   );
-  // унификация уже стоящего em dash: NBSP слева, обычный пробел справа
+  // унификация уже стоящего em dash: NBSP слева, обычный пробел справа.
+  // ИСКЛЮЧЕНИЯ: цифры с обеих сторон (диапазон вида 1991—1995) и WJ-обёртка
+  // (U+2060) — её ставит `convertDateRanges` для дата-диапазонов, чтобы
+  // запретить перенос; повторно её трогать нельзя.
   out = out.replace(
     /(\S)[ \u00A0\u2009\u202F\t]*—[ \u00A0\u2009\u202F\t]*(\S)/g,
     (m, a: string, b: string) => {
       if (/\d/.test(a) && /\d/.test(b)) return m;
+      if (a === "\u2060" || b === "\u2060") return m;
       return `${a}${NBSP}${EM_DASH} ${b}`;
     }
   );
@@ -223,10 +252,15 @@ const MONTH_RANGE_RE = new RegExp(
   "giu"
 );
 
+// WORD JOINER (U+2060) — non-breaking, zero-width. Оборачиваем em-dash в
+// числовых/месячных диапазонах, иначе Figma по правилам UAX#14 рвёт строку
+// прямо по em-dash: `1799—|1837` уезжает на новую строку, и `гг.` остаётся
+// один. WJ запрещает перенос — диапазон становится неразрывным целиком.
+const WJ = "\u2060";
 export function convertDateRanges(text: string): string {
-  text = text.replace(YEAR_RANGE_RE, `$1${EM_DASH}$2`);
+  text = text.replace(YEAR_RANGE_RE, `$1${WJ}${EM_DASH}${WJ}$2`);
   text = text.replace(MONTH_RANGE_RE, (_m, a: string, b: string) =>
-    `${a}${EM_DASH}${b}`
+    `${a}${WJ}${EM_DASH}${WJ}${b}`
   );
   return text;
 }
@@ -259,6 +293,21 @@ export function groupThousandsRu(text: string): string {
   return text.replace(/\b\d{5,}\b/g, (n) =>
     n.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
   );
+}
+
+// Число + квантификаторное сущ. (валюта/время/дата) → NBSP.
+// Список узкий и кураторский (см. QUANTIFIER_NOUNS + MONTHS_RU): только
+// устойчивые количественные классы. «5 рублей», «12 января», «300 минут»
+// клеятся; «243 голубя», «100 коробок» — нет, чтобы не лепить произвольно.
+// Число может быть с уже расставленными NBSP-разделителями тысяч
+// («1 234 567 рублей»), поэтому слева числа допускаем NBSP.
+export function glueNumQuantifiers(text: string): string {
+  const words = [...QUANTIFIER_NOUNS, ...MONTHS_RU].join("|");
+  const re = new RegExp(
+    `(\\d)[ \\t]+(${words})(?![\\p{L}\\p{N}])`,
+    "giu"
+  );
+  return text.replace(re, (_m, d: string, w: string) => `${d}${NBSP}${w}`);
 }
 
 // 5.9 Пробелы перед знаками препинания.
@@ -297,6 +346,7 @@ export function applyRussianRules(
   if (yoFix) text = applyYoFix(text); // ёфикация по белому списку
   text = convertNegativeMinus(text); // 5.11
   text = normalizeAndOr(text); // 5.12 — «и/или» без пробелов
+  text = glueNumQuantifiers(text); // число + валюта/время/месяц → NBSP
   text = groupThousandsRu(text);
 
   return text;
