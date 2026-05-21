@@ -37,6 +37,24 @@ describe("common: numeric ranges (en dash)", () => {
     E("range", "10-12 кг", "10–12" + NBSP + "кг"));
 });
 
+describe("common: ISO 8601 даты — защищены от en-dash", () => {
+  const WJ = "⁠";
+  test("'2024-12-31' → '2024[WJ]-[WJ]12[WJ]-[WJ]31' (ISO date)", () =>
+    E("isoDate", "2024-12-31", `2024${WJ}-${WJ}12${WJ}-${WJ}31`));
+  test("'2024-12-31T23:59:59' — datetime сохраняется", () =>
+    E("isoDateTime", "2024-12-31T23:59:59", `2024${WJ}-${WJ}12${WJ}-${WJ}31T23:59:59`));
+  test("'2024-12-31T23:59:59Z' — UTC timezone", () =>
+    E("isoDateTimeUtc", "2024-12-31T23:59:59Z", `2024${WJ}-${WJ}12${WJ}-${WJ}31T23:59:59Z`));
+  test("'2024-12-31T23:59:59+03:00' — offset не трогаем", () =>
+    E("isoDateTimeTz", "2024-12-31T23:59:59+03:00", `2024${WJ}-${WJ}12${WJ}-${WJ}31T23:59:59+03:00`));
+  test("ISO date внутри предложения", () =>
+    E("isoInText", "Релиз 2024-12-31, готов.", `Релиз 2024${WJ}-${WJ}12${WJ}-${WJ}31, готов.`));
+  test("ISO date рядом с year range — оба работают", () =>
+    E("isoMixed", "Эпоха 1991-1995, релиз 2024-12-31.", `Эпоха 1991–1995, релиз 2024${WJ}-${WJ}12${WJ}-${WJ}31.`));
+  test("'2024-12' (только год-месяц) — НЕ ISO, обрабатывается как range", () =>
+    E("isoYearMonth", "2024-12", "2024–12"));
+});
+
 describe("common: double spaces", () => {
   test("collapse 2 spaces to 1", () =>
     E("doubleSpace", "a  b", "a b"));
@@ -62,6 +80,38 @@ describe("common: number + unit (NBSP)", () => {
     E("numUnitOhm", "470 Ом", `470${NBSP}Ом`));
   test("ёмкость: 5 мВ", () =>
     E("numUnitVolt", "5 мВ", `5${NBSP}мВ`));
+  // Расширенный набор единиц
+  test("Imaging: '12 Мп' → NBSP", () =>
+    E("numUnitMpx", "Камера 12 Мп", `Камера 12${NBSP}Мп`));
+  test("Imaging long: '12 мегапикселей'", () =>
+    E("numUnitMpxLong", "12 мегапикселей", `12${NBSP}мегапикселей`));
+  test("UI: '1920 px'", () =>
+    E("numUnitPx", "1920 px", `1920${NBSP}px`));
+  test("UI: '300 dpi'", () =>
+    E("numUnitDpi", "300 dpi", `300${NBSP}dpi`));
+  test("UI: '60 fps'", () =>
+    E("numUnitFps", "60 fps", `60${NBSP}fps`));
+  test("Digital: '500 Кб' (кириллица, mixed case)", () =>
+    E("numUnitKb", "500 Кб", `500${NBSP}Кб`));
+  test("Digital: '4 Гб' (single-letter prefix)", () =>
+    E("numUnitGb", "Объём 4 Гб данных", `Объём 4${NBSP}Гб данных`));
+  test("Digital: '250 байт'", () =>
+    E("numUnitByte", "250 байт", `250${NBSP}байт`));
+  test("Pressure: '1013 кПа'", () =>
+    E("numUnitKPa", "1013 кПа", `1013${NBSP}кПа`));
+  test("Energy: '200 кДж'", () =>
+    E("numUnitKJ", "200 кДж", `200${NBSP}кДж`));
+  test("Currency: '50 £'", () =>
+    E("numUnitGbp", "50 £", `50${NBSP}£`));
+  test("Currency: '100 ₸'", () =>
+    E("numUnitTenge", "100 ₸", `100${NBSP}₸`));
+  test("Permille: '5 ‰'", () =>
+    E("numUnitPermille", "5 ‰", `5${NBSP}‰`));
+  // Negative: без числа перед — не клеим
+  test("'у меня бит хорошее' (без числа) — не клеим", () =>
+    E("noBitWithoutDigit", "у меня бит настроение", "у меня бит настроение"));
+  test("'пиксель один' (без числа) — не клеим", () =>
+    E("noPixelWithoutDigit", "пиксель один", "пиксель один"));
 });
 
 describe("common: primes", () => {
