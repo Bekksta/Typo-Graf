@@ -79,11 +79,11 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 
 ### Russian (`ru`)
 
-- NBSP after proclitics — short prepositions, conjunctions, and forward-binding particles: `в дом`, `на улице`, `и т. п.`, `даже он`. The single-letter pronoun `я` is included (one-letter words must not end a line) — `Я закончил` → `Я<NBSP>закончил`. Other pronouns stay free-standing.
-- NBSP before enclitic particles `бы`, `ли`, `же`, `ль` — they bind to the **previous** word only. Example: `всё было бы иначе` → `всё было<NBSP>бы иначе` (so `иначе` can still wrap). The proclitic and enclitic lists never overlap by design.
+- NBSP after **proclitics** — short prepositions, conjunctions, and forward-binding particles: `в дом`, `на улице`, `и т. п.`, `даже он`. The single-letter pronoun `я` is included — `Я закончил` → `Я<NBSP>закончил`. Other pronouns stay free-standing.
+- NBSP before **enclitic particles** `бы`, `ли`, `же`, `ль` — they bind to the **previous** word only. Example: `всё было бы иначе` → `всё было<NBSP>бы иначе` (so `иначе` can still wrap). The proclitic and enclitic lists never overlap.
 - Initials: `А. С. Пушкин` — NBSP between initials and surname.
 - Abbreviations with a dot: `г. Москва`, `ул. Ленина`, `№ 8`, `§ 104`, `1981 г.` — NBSP after.
-- Year/century closing abbreviations `гг.` / `вв.` — NBSP **before** only (to keep `1991<NBSP>гг.` together), regular space after (these are closing tokens, breaking before the next word is fine).
+- Year/century closing abbreviations `гг.` / `вв.` — NBSP **before** only (to keep `1991<NBSP>гг.` together), regular space after.
 - Compound abbreviations: `и т. д.`, `т. е.`, `до н. э.` — normalized together with NBSP. The trailing single-letter part (the `д.` in `и т. д.`) does **not** glue to whatever follows, so `и т. д. А. С. Пушкин` keeps a regular space between `д.` and the initials.
 - Hyphenated abbreviations without a dot: `г-н`, `г-жа`, `д-р`, `р-н` — non-breaking hyphen (U+2011) inside and NBSP after.
 - Angle quotes `«…»`. Punctuation pulled inside the closing quote.
@@ -93,7 +93,7 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 - Unicode minus `−` (U+2212) for negative financial values: `-300 ₽` → `−300 ₽`, `-15 %` → `−15 %`. Bullet-list hyphens are left alone.
 - `и / или` → `и/или` (no spaces around the slash). Case is preserved at sentence start: `И / или …` → `И/или …`.
 - Thousands grouping with NBSP for numbers ≥5 digits: `1234567` → `1 234 567`. Years (`1991`) and 4-digit IDs stay.
-- **Ё-fication on ~107,000 word forms** from the [eyo-kernel](https://github.com/e2yo/eyo-kernel) dictionary. Only "safe" forms are replaced — those without a same-spelling homograph that lacks `ё`. So `ребенок → ребёнок`, `учет → учёт`, `шел → шёл`, but `все` stays as is (homograph of the plural of «весь»). No guessing edits.
+- **Ё-fication on ~107,000 word forms** from the [eyo-kernel](https://github.com/e2yo/eyo-kernel) dictionary. Only "safe" forms are replaced — those without a same-spelling homograph that lacks `ё`. So `ребенок → ребёнок`, `учет → учёт`, `шел → шёл`, but `все` stays as is (homograph of the plural of «весь»).
 
 ### English (`en`)
 
