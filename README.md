@@ -78,7 +78,7 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 
 ### Russian (`ru`)
 
-- NBSP after proclitics — short prepositions, conjunctions, and forward-binding particles: `в дом`, `на улице`, `и т. п.`, `даже он`.
+- NBSP after proclitics — short prepositions, conjunctions, and forward-binding particles: `в дом`, `на улице`, `и т. п.`, `даже он`. The single-letter pronoun `я` is included (one-letter words must not end a line) — `Я закончил` → `Я<NBSP>закончил`. Other pronouns stay free-standing.
 - NBSP before enclitic particles `бы`, `ли`, `же`, `ль` — they bind to the **previous** word only. Example: `всё было бы иначе` → `всё было<NBSP>бы иначе` (so `иначе` can still wrap). The proclitic and enclitic lists never overlap by design.
 - Initials: `А. С. Пушкин` — NBSP between initials and surname.
 - Abbreviations with a dot: `г. Москва`, `ул. Ленина`, `№ 8`, `§ 104`, `1981 г.` — NBSP after.
@@ -90,7 +90,7 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 - Date ranges with em-dash, no spaces, wrapped in U+2060 (word joiner) to keep the whole range unbreakable in Figma: `1991-1995` → `1991⁠—⁠1995`, `январь-март` → `январь⁠—⁠март`. Without the word joiner, Figma honors UAX#14 and may wrap the line right at the em-dash.
 - Number + quantifier noun (currency, time, date) → NBSP: `5 рублей`, `12 января`, `300 минут`, `1991 году`. A curated list — generic countable nouns like `243 голубя` are **not** glued.
 - Unicode minus `−` (U+2212) for negative financial values: `-300 ₽` → `−300 ₽`, `-15 %` → `−15 %`. Bullet-list hyphens are left alone.
-- `и / или` → `и/или` (no spaces around the slash).
+- `и / или` → `и/или` (no spaces around the slash). Case is preserved at sentence start: `И / или …` → `И/или …`.
 - Thousands grouping with NBSP for numbers ≥5 digits: `1234567` → `1 234 567`. Years (`1991`) and 4-digit IDs stay.
 - **Ё-fication on ~107,000 word forms** from the [eyo-kernel](https://github.com/e2yo/eyo-kernel) dictionary. Only "safe" forms are replaced — those without a same-spelling homograph that lacks `ё`. So `ребенок → ребёнок`, `учет → учёт`, `шел → шёл`, but `все` stays as is (homograph of the plural of «весь»). No guessing edits.
 
