@@ -114,5 +114,6 @@ export function runPipeline(input: string, lang?: Language): string {
       cursor++;
     }
   }
-  return unmask(out, masks);
+  // Срез сиротных переносов в конце узла — зеркалит финальный шаг main.ts.
+  return unmask(out, masks).replace(/[\n\r]+$/, "");
 }

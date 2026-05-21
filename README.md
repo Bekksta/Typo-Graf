@@ -61,6 +61,7 @@ For mixed scripts the **dominant** wins (Cyrillic vs Latin letter count). E.g. �
 - `(c)`/`(C)` → `©`, `(r)`/`(R)` → `®`, `(tm)`/`(TM)` → `™` (case-insensitive).
 - CRLF / lone CR → LF. NFC normalization on input (`e` + combining acute → `é`).
 - Long numbers (≥5 digits) get thousands grouping with the locale's preferred separator (see per-language sections).
+- Trailing orphan line breaks at the end of a text node (`\n` / `\r`, one or many) are stripped. Line breaks **between** paragraphs (`Para 1\n\nPara 2`) are preserved.
 
 ### Math
 

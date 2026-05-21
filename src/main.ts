@@ -252,6 +252,20 @@ async function run(): Promise<string> {
         skippedTooLong++;
         continue;
       }
+
+      // Сиротные переносы в конце узла — мусор от ручного редактирования.
+      // Переносы МЕЖДУ абзацами (Para 1\n\nPara 2) не трогаем — они осмысленные;
+      // срезается только хвост.
+      const trailing = before.match(/[\n\r]+$/);
+      if (trailing) {
+        replacements.push({
+          start: before.length - trailing[0].length,
+          end: before.length,
+          text: "",
+          reason: "trailing-newline",
+        });
+      }
+
       if (!replacements.length) continue;
 
       const ok = await loadFontsForNode(node);

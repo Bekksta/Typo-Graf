@@ -123,3 +123,20 @@ describe("pipeline: multi-pass convergence", () => {
   test("'...   ...' → '……' (ELLIPSIS_COMPACT eats whitespace around dots)", () =>
     E("multiPass", "...   ...", "……"));
 });
+
+describe("pipeline: trailing newlines stripped, paragraph breaks preserved", () => {
+  test("trailing single \\n удаляется", () =>
+    E("trailingOne", "текст\n", "текст"));
+  test("trailing множественные \\n удаляются", () =>
+    E("trailingMany", "текст\n\n\n", "текст"));
+  test("переносы между абзацами сохраняются (без хвоста)", () =>
+    E("paraBreak", "Абзац 1.\n\nАбзац 2.", "Абзац 1.\n\nАбзац 2."));
+  test("хвост срезается, межабзацный — нет", () =>
+    E("paraBreakTrail", "Абзац 1.\n\nАбзац 2.\n\n", "Абзац 1.\n\nАбзац 2."));
+  test("\\r\\n в хвосте срезается (после CRLF→LF)", () =>
+    E("trailingCrlf", "текст\r\n\r\n", "текст"));
+  test("узел только из переносов → пусто", () =>
+    E("onlyNewlines", "\n\n", ""));
+  test("без хвоста — без изменений", () =>
+    E("noTrail", "текст", "текст"));
+});
