@@ -191,19 +191,15 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 
 ## Interface
 
-Window 320×160 px:
+A native Figma notification shows the progress (`Typografing… 47%`, updated every 500 ms). Click `×` to cancel — whatever has already been applied stays, revert with `Ctrl/⌘+Z`.
 
-- Progress bar.
-- Current operation (`Scanning…`, `Processing…`, `Cancelling…`).
-- Counter of processed nodes: `X / Y`.
-- Cancel button — stops after the current node; whatever has already been applied stays (revert with a single `Ctrl/⌘+Z`).
-
-The final notify is localized to the Figma UI language:
+The final notify stays on screen for 10 sec, on a single line, localized to the Figma UI language:
 
 ```
-Done. Languages: Russian, English. Changes: 142. Nodes affected: 38.
-Ctrl/⌘+Z to undo
+Done. Changes: 142, nodes: 38. Languages: Russian, English. Ctrl/⌘+Z to undo
 ```
+
+Cancelling part-way through still produces a summary with the partial counts. If some nodes were skipped (heavy font load, oversized) or the 2000-node limit was hit, those numbers are appended to the same line.
 
 ## Localization
 

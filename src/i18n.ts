@@ -30,20 +30,17 @@ type MessageKey =
   | "cancelledStat"
   | "errorStat"
   | "noTextLayersStat"
-  // Статистические предложения (с двоеточием и точкой, подстановки {list}/{n}/{total})
+  // Статистические предложения (подстановки {list}/{n}/{changes}/{nodes}/{limit}/{total})
   | "languagesStat"
-  | "changesStat"
-  | "affectedStat"
+  | "summaryStat"
   | "skippedFontsStat"
   | "skippedLongStat"
   | "limitStat"
   // Подсказка про undo (без точки — отдельной строкой)
   | "undoHint"
-  // UI лейблы
-  | "scanning"
-  | "processing"
-  | "cancelling"
-  | "cancelButton";
+  // Текст loading-нотиса во время работы (Тупографим… / Typografing…).
+  // К нему добавляется процент: «Тупографим… 47%».
+  | "loadingNotice";
 
 const T: Record<UILocale, Record<MessageKey, string>> = {
   ru: {
@@ -52,16 +49,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Ошибка: {message}.",
     noTextLayersStat: "Текстовые слои не найдены.",
     languagesStat: "Языки: {list}.",
-    changesStat: "Изменений: {n}.",
-    affectedStat: "Затронуто узлов: {n}.",
+    summaryStat: "Изменений: {changes}, узлов: {nodes}.",
     skippedFontsStat: "Пропущено по шрифту: {n}.",
     skippedLongStat: "Пропущено длинных узлов: {n}.",
     limitStat: "Обработан лимит {limit} из {total}.",
     undoHint: "Ctrl/⌘+Z — отменить",
-    scanning: "Сканирование…",
-    processing: "Обработка…",
-    cancelling: "Отмена…",
-    cancelButton: "Отменить",
+    loadingNotice: "Тупографим…",
   },
   en: {
     doneStat: "Done.",
@@ -69,16 +62,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Error: {message}.",
     noTextLayersStat: "No text layers found.",
     languagesStat: "Languages: {list}.",
-    changesStat: "Changes: {n}.",
-    affectedStat: "Affected nodes: {n}.",
+    summaryStat: "Changes: {changes}, nodes: {nodes}.",
     skippedFontsStat: "Skipped (font): {n}.",
     skippedLongStat: "Skipped (too long): {n}.",
     limitStat: "Processed first {limit} of {total}.",
     undoHint: "Ctrl/⌘+Z to undo",
-    scanning: "Scanning…",
-    processing: "Processing…",
-    cancelling: "Cancelling…",
-    cancelButton: "Cancel",
+    loadingNotice: "Typografing…",
   },
   fr: {
     doneStat: "Terminé.",
@@ -86,16 +75,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Erreur : {message}.",
     noTextLayersStat: "Aucun calque de texte trouvé.",
     languagesStat: "Langues : {list}.",
-    changesStat: "Modifications : {n}.",
-    affectedStat: "Nœuds modifiés : {n}.",
+    summaryStat: "Modifications : {changes}, nœuds : {nodes}.",
     skippedFontsStat: "Ignorés (police) : {n}.",
     skippedLongStat: "Ignorés (trop longs) : {n}.",
     limitStat: "{limit} premiers traités sur {total}.",
     undoHint: "Ctrl/⌘+Z pour annuler",
-    scanning: "Analyse…",
-    processing: "Traitement…",
-    cancelling: "Annulation…",
-    cancelButton: "Annuler",
+    loadingNotice: "Typographions…",
   },
   uk: {
     doneStat: "Готово.",
@@ -103,16 +88,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Помилка: {message}.",
     noTextLayersStat: "Текстові шари не знайдено.",
     languagesStat: "Мови: {list}.",
-    changesStat: "Змін: {n}.",
-    affectedStat: "Змінено вузлів: {n}.",
+    summaryStat: "Змін: {changes}, вузлів: {nodes}.",
     skippedFontsStat: "Пропущено за шрифтом: {n}.",
     skippedLongStat: "Пропущено задовгих вузлів: {n}.",
     limitStat: "Оброблено перші {limit} з {total}.",
     undoHint: "Ctrl/⌘+Z — скасувати",
-    scanning: "Сканування…",
-    processing: "Обробка…",
-    cancelling: "Скасування…",
-    cancelButton: "Скасувати",
+    loadingNotice: "Типографуємо…",
   },
   de: {
     doneStat: "Fertig.",
@@ -120,16 +101,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Fehler: {message}.",
     noTextLayersStat: "Keine Textebenen gefunden.",
     languagesStat: "Sprachen: {list}.",
-    changesStat: "Änderungen: {n}.",
-    affectedStat: "Betroffene Knoten: {n}.",
+    summaryStat: "Änderungen: {changes}, Knoten: {nodes}.",
     skippedFontsStat: "Übersprungen (Schrift): {n}.",
     skippedLongStat: "Übersprungen (zu lang): {n}.",
     limitStat: "{limit} von {total} verarbeitet.",
     undoHint: "Ctrl/⌘+Z zum Rückgängigmachen",
-    scanning: "Scannen…",
-    processing: "Verarbeitung…",
-    cancelling: "Abbruch…",
-    cancelButton: "Abbrechen",
+    loadingNotice: "Typografieren…",
   },
   es: {
     doneStat: "Listo.",
@@ -137,16 +114,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Error: {message}.",
     noTextLayersStat: "No se encontraron capas de texto.",
     languagesStat: "Idiomas: {list}.",
-    changesStat: "Cambios: {n}.",
-    affectedStat: "Nodos afectados: {n}.",
+    summaryStat: "Cambios: {changes}, nodos: {nodes}.",
     skippedFontsStat: "Omitidos (fuente): {n}.",
     skippedLongStat: "Omitidos (demasiado largos): {n}.",
     limitStat: "Procesados los primeros {limit} de {total}.",
     undoHint: "Ctrl/⌘+Z para deshacer",
-    scanning: "Escaneando…",
-    processing: "Procesando…",
-    cancelling: "Cancelando…",
-    cancelButton: "Cancelar",
+    loadingNotice: "Tipografiando…",
   },
   bcs: {
     doneStat: "Gotovo.",
@@ -154,16 +127,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Greška: {message}.",
     noTextLayersStat: "Tekstualni slojevi nisu pronađeni.",
     languagesStat: "Jezici: {list}.",
-    changesStat: "Izmjene: {n}.",
-    affectedStat: "Izmijenjeni čvorovi: {n}.",
+    summaryStat: "Izmjene: {changes}, čvorovi: {nodes}.",
     skippedFontsStat: "Preskočeno (font): {n}.",
     skippedLongStat: "Preskočeno (preduga): {n}.",
     limitStat: "Obrađeno prvih {limit} od {total}.",
     undoHint: "Ctrl/⌘+Z za poništavanje",
-    scanning: "Skeniranje…",
-    processing: "Obrada…",
-    cancelling: "Otkazivanje…",
-    cancelButton: "Otkaži",
+    loadingNotice: "Tipografišemo…",
   },
   it: {
     doneStat: "Fatto.",
@@ -171,16 +140,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Errore: {message}.",
     noTextLayersStat: "Nessun livello di testo trovato.",
     languagesStat: "Lingue: {list}.",
-    changesStat: "Modifiche: {n}.",
-    affectedStat: "Nodi modificati: {n}.",
+    summaryStat: "Modifiche: {changes}, nodi: {nodes}.",
     skippedFontsStat: "Saltati (font): {n}.",
     skippedLongStat: "Saltati (troppo lunghi): {n}.",
     limitStat: "Elaborati i primi {limit} di {total}.",
     undoHint: "Ctrl/⌘+Z per annullare",
-    scanning: "Scansione…",
-    processing: "Elaborazione…",
-    cancelling: "Annullamento…",
-    cancelButton: "Annulla",
+    loadingNotice: "Tipografando…",
   },
   pl: {
     doneStat: "Gotowe.",
@@ -188,16 +153,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Błąd: {message}.",
     noTextLayersStat: "Nie znaleziono warstw tekstowych.",
     languagesStat: "Języki: {list}.",
-    changesStat: "Zmiany: {n}.",
-    affectedStat: "Zmienione węzły: {n}.",
+    summaryStat: "Zmiany: {changes}, węzły: {nodes}.",
     skippedFontsStat: "Pominięto (czcionka): {n}.",
     skippedLongStat: "Pominięto (zbyt długie): {n}.",
     limitStat: "Przetworzono pierwsze {limit} z {total}.",
     undoHint: "Ctrl/⌘+Z aby cofnąć",
-    scanning: "Skanowanie…",
-    processing: "Przetwarzanie…",
-    cancelling: "Anulowanie…",
-    cancelButton: "Anuluj",
+    loadingNotice: "Typografujemy…",
   },
   pt: {
     doneStat: "Concluído.",
@@ -205,16 +166,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Erro: {message}.",
     noTextLayersStat: "Nenhuma camada de texto encontrada.",
     languagesStat: "Idiomas: {list}.",
-    changesStat: "Alterações: {n}.",
-    affectedStat: "Nós afetados: {n}.",
+    summaryStat: "Alterações: {changes}, nós: {nodes}.",
     skippedFontsStat: "Ignorados (fonte): {n}.",
     skippedLongStat: "Ignorados (muito longos): {n}.",
     limitStat: "Processados os primeiros {limit} de {total}.",
     undoHint: "Ctrl/⌘+Z para desfazer",
-    scanning: "Verificando…",
-    processing: "Processando…",
-    cancelling: "Cancelando…",
-    cancelButton: "Cancelar",
+    loadingNotice: "Tipografando…",
   },
   nl: {
     doneStat: "Klaar.",
@@ -222,16 +179,12 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
     errorStat: "Fout: {message}.",
     noTextLayersStat: "Geen tekstlagen gevonden.",
     languagesStat: "Talen: {list}.",
-    changesStat: "Wijzigingen: {n}.",
-    affectedStat: "Betrokken knopen: {n}.",
+    summaryStat: "Wijzigingen: {changes}, knopen: {nodes}.",
     skippedFontsStat: "Overgeslagen (lettertype): {n}.",
     skippedLongStat: "Overgeslagen (te lang): {n}.",
     limitStat: "Eerste {limit} van {total} verwerkt.",
     undoHint: "Ctrl/⌘+Z om ongedaan te maken",
-    scanning: "Scannen…",
-    processing: "Verwerken…",
-    cancelling: "Annuleren…",
-    cancelButton: "Annuleren",
+    loadingNotice: "Typograferen…",
   },
 };
 
