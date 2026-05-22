@@ -20,6 +20,18 @@ function protectIsoDates(text: string): string {
   });
 }
 
+// Год-месяц без дня: `2024-12`, `1999-01`. Без защиты `NUM_RANGE_RE` ниже
+// превратит в `2024–12` (читается как численный диапазон), а это всегда
+// дата (квартальная отчётность, имя коммита, тэг релиза и т. п.).
+// Строгая маска: 4-значный год + 2-значный месяц 01–12. Год-диапазоны
+// (`1999-2024`) под этот шаблон не подходят — там оба числа 4-значные.
+// Запускать ПОСЛЕ protectIsoDates: полная ISO-дата уже обёрнута WJ,
+// поэтому здесь не сматчит её префикс «YYYY-MM».
+const YEAR_MONTH_RE = /\b(\d{4})-(0[1-9]|1[0-2])\b/g;
+function protectYearMonth(text: string): string {
+  return text.replace(YEAR_MONTH_RE, `$1${WJ}-${WJ}$2`);
+}
+
 // Базовый набор единиц для number+unit; языковые правила могут расширять.
 // Расширен SI-юнитами и ru-сокращениями годов/веков (`гг.` / `вв.`),
 // которые должны быть «прижаты» к предшествующему числу.
@@ -77,8 +89,9 @@ const TM_RE = /\((?:tm|TM|Tm|tM)\)/g;
 export function applyCommonRules(input: string): string {
   let text = input;
 
-  // Защита ISO-дат ДО NUM_RANGE_RE — иначе `2024-12-31` сломается на en-dash.
+  // Защита дат ДО NUM_RANGE_RE — иначе `2024-12-31` и `2024-12` сломаются на en-dash.
   text = protectIsoDates(text);
+  text = protectYearMonth(text);
 
   text = text
     .replace(ELLIPSIS_COMPACT_RE, ELLIPSIS)

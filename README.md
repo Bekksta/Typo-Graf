@@ -55,7 +55,7 @@ For mixed scripts the **dominant** wins (Cyrillic vs Latin letter count). E.g. �
 - `10-12` → `10–12` (en dash for numeric ranges).
 - Double spaces (and after `.!?`) → single space.
 - Number + unit/currency/percent → NBSP. Recognized units cover SI (kg/g/cm/mm/m/km/l/ml), time (min/sec/ч), frequency (Гц/кГц/МГц/ГГц), electricity (Вт/кВт/В/А/Ом), light/sound (лм/лк/дБ/дБА), pressure (Па/кПа/МПа/бар/атм), energy (Дж/кДж/кал/ккал), digital (бит/байт + Кб/Мб/Гб/Тб and Roman МБ/ГБ/ТБ + Мбит/Кбит/Гбит), imaging/UI (Мп/мегапиксель, px, dpi, ppi, fps), currency (₽/€/$/£/¥/¢/₸/₴/₪), and `%`/`‰`.
-- ISO 8601 dates (`2024-12-31`, `2024-12-31T23:59:59+03:00`) are protected: hyphens inside the date portion are wrapped in U+2060 so other rules can't break them into en-dash, and the whole date stays unbreakable in layout.
+- ISO 8601 dates (`2024-12-31`, `2024-12-31T23:59:59+03:00`) and year-month (`2024-12`, strict `YYYY-MM` with valid month 01–12) are protected: hyphens inside the date are wrapped in U+2060 so other rules can't break them into en-dash, and the whole date stays unbreakable in layout. Year ranges like `1999-2024` and short numeric ranges like `10-12` still become en-dash as expected.
 - `12''` → `12″`, `12'` → `12′` (primes).
 - `45 deg` → `45°`.
 - `(c)`/`(C)` → `©`, `(r)`/`(R)` → `®`, `(tm)`/`(TM)` → `™` (case-insensitive).
