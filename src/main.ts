@@ -23,7 +23,7 @@ import { applyReplacements } from "./text/ranges";
 
 const MAX_NODES = 2000;
 const BATCH_SIZE = 150;
-const PIPELINE_MAX_PASSES = 3;
+const MAX_PIPELINE_PASSES = 3;
 // LCS-таблица — O(n²) по памяти. На один свободный сегмент ставим лимит,
 // очень длинные узлы (макет с целым параграфом текста) — пропускаем целиком.
 const MAX_SEGMENT_LENGTH = 5000;
@@ -116,7 +116,7 @@ function transformSegment(text: string, lang: Language): string {
   // CRLF/CR → LF — Figma внутри использует LF, но импорт из текстовых
   // файлов может прийти с другими переносами.
   let prev = text.normalize("NFC").replace(/\r\n?/g, "\n");
-  for (let i = 0; i < PIPELINE_MAX_PASSES; i++) {
+  for (let i = 0; i < MAX_PIPELINE_PASSES; i++) {
     let s = applyMath(prev);
     s = applyCommonRules(s);
     s = langProc(s);
@@ -167,45 +167,54 @@ function yieldControl(): Promise<void> {
 }
 
 function formatLangList(): string {
-  const sorted = Array.from(langStats.entries()).sort((a, b) => b[1] - a[1]);
-  return sorted.map(([lang]) => langName(uiLocale, lang)).join(", ");
+  const sorted = Array.from(stats.byLang.entries()).sort((a, b) => b[1] - a[1]);
+  return sorted.map(([lang]) => langName(state.uiLocale, lang)).join(", ");
 }
 
 // ─── Состояние плагина (module-level) ─────────────────────────────────
 // Стейт держим на верхнем уровне, чтобы close-hook мог собрать сводку
 // в любой момент: при «нормальном» завершении, нажатии Cancel, клике × на
 // нотисе, или при системном «Running Typo Graf · Cancel».
-let uiLocale: UILocale = "en";
-let cancelled = false;
-let initResolve: (() => void) | null = null;
 
-let runStarted = false;
-let noTextLayers = false;
-let hasError = false;
-let errorMessage = "";
-let summaryShown = false;
+// `state` — флаги жизненного цикла прогона и UI-локаль.
+const state = {
+  uiLocale: "en" as UILocale,
+  isCancelled: false,
+  isRunStarted: false,
+  hasNoTextLayers: false,
+  hasError: false,
+  errorMessage: "",
+  isSummaryShown: false,
+  isTruncated: false,
+};
 
-let totalChanges = 0;
-let affectedNodes = 0;
-let skippedFonts = 0;
-let skippedTooLong = 0;
-let truncated = false;
-let totalAllNodes = 0;
-const langStats = new Map<Language, number>();
+// `stats` — счётчики для финальной сводки.
+const stats = {
+  totalChanges: 0,
+  affectedNodes: 0,
+  skippedFonts: 0,
+  skippedTooLong: 0,
+  totalAllNodes: 0,
+  byLang: new Map<Language, number>(),
+};
 
 // Loading-нотис: всегда виден от запуска до завершения, чтобы Figma не
 // поднимала свой системный «Running Typo Graf» (он появляется, когда у
 // плагина нет видимого фидбэка).
-// activeHandler хранит «текущий» нотис: при re-issue для обновления
-// процента старый handler уже не активен, поэтому его onDequeue
-// игнорируется через сравнение по идентичности.
-let activeHandler: NotificationHandler | null = null;
-let loadingActive = false;
-let lastProgressUpdateAt = 0;
+// `handler` хранит «текущий» нотис: при re-issue для обновления процента
+// старый handler уже не активен, поэтому его onDequeue игнорируется через
+// сравнение по идентичности.
+const loading = {
+  handler: null as NotificationHandler | null,
+  isActive: false,
+  lastUpdateAt: 0,
+};
+
+let initResolve: (() => void) | null = null;
 
 figma.ui.onmessage = (msg) => {
   if (msg && msg.type === "init") {
-    uiLocale = detectUILocale(msg.locale);
+    state.uiLocale = detectUILocale(msg.locale);
     if (initResolve) {
       initResolve();
       initResolve = null;
@@ -226,25 +235,25 @@ function waitForInit(timeoutMs: number): Promise<void> {
 }
 
 function formatLoadingText(percent: number | null): string {
-  const base = t(uiLocale, "loadingNotice");
+  const base = t(state.uiLocale, "loadingNotice");
   return percent === null ? base : `${base} ${percent}%`;
 }
 
 function openLoadingNotify(text: string): NotificationHandler {
   // Локально захватываем handle, чтобы в onDequeue сравнить «дёрнули
-  // именно этот нотис» с activeHandler. Если они не равны — этот нотис
+  // именно этот нотис» с loading.handler. Если они не равны — этот нотис
   // уже устаревший (перевыставили для обновления процента), игнорируем.
   let self: NotificationHandler;
   self = figma.notify(text, {
     timeout: Infinity,
     onDequeue: (reason) => {
-      if (self !== activeHandler) return;
-      if (!loadingActive) return;
+      if (self !== loading.handler) return;
+      if (!loading.isActive) return;
       // × на текущем нотисе — единственный способ отмены через UI.
       if (reason === "dismiss") {
-        cancelled = true;
-        loadingActive = false;
-        activeHandler = null;
+        state.isCancelled = true;
+        loading.isActive = false;
+        loading.handler = null;
       }
     },
   });
@@ -252,28 +261,28 @@ function openLoadingNotify(text: string): NotificationHandler {
 }
 
 function startLoadingNotify(): void {
-  loadingActive = true;
-  activeHandler = openLoadingNotify(formatLoadingText(null));
+  loading.isActive = true;
+  loading.handler = openLoadingNotify(formatLoadingText(null));
 }
 
 function updateLoadingProgress(percent: number): void {
-  if (!loadingActive || !activeHandler) return;
+  if (!loading.isActive || !loading.handler) return;
   const now = Date.now();
-  if (now - lastProgressUpdateAt < PROGRESS_UPDATE_MS) return;
-  lastProgressUpdateAt = now;
-  // Порядок важен: сначала выставляем новый activeHandler, потом гасим
-  // старый. Тогда onDequeue старого увидит self !== activeHandler и
+  if (now - loading.lastUpdateAt < PROGRESS_UPDATE_MS) return;
+  loading.lastUpdateAt = now;
+  // Порядок важен: сначала выставляем новый loading.handler, потом гасим
+  // старый. Тогда onDequeue старого увидит self !== loading.handler и
   // не воспримет programmatic-cancel как пользовательский dismiss.
-  const old = activeHandler;
-  activeHandler = openLoadingNotify(formatLoadingText(percent));
+  const old = loading.handler;
+  loading.handler = openLoadingNotify(formatLoadingText(percent));
   old.cancel();
 }
 
 function closeLoadingNotify(): void {
-  loadingActive = false;
-  if (activeHandler) {
-    const h = activeHandler;
-    activeHandler = null;
+  loading.isActive = false;
+  if (loading.handler) {
+    const h = loading.handler;
+    loading.handler = null;
     h.cancel();
   }
 }
@@ -282,15 +291,15 @@ async function run(): Promise<void> {
   await waitForInit(INIT_TIMEOUT_MS);
 
   const allNodes = collectTargets();
-  totalAllNodes = allNodes.length;
+  stats.totalAllNodes = allNodes.length;
   if (!allNodes.length) {
-    noTextLayers = true;
+    state.hasNoTextLayers = true;
     return;
   }
 
   const nodes = allNodes.slice(0, MAX_NODES);
-  truncated = allNodes.length > MAX_NODES;
-  runStarted = true;
+  state.isTruncated = allNodes.length > MAX_NODES;
+  state.isRunStarted = true;
 
   // Нотис открываем СРАЗУ — пока он висит, Figma не поднимет системный
   // «Running …», и мельтешения не будет. Для быстрых прогонов он просто
@@ -304,12 +313,12 @@ async function run(): Promise<void> {
 
   try {
     for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
-      if (cancelled) break;
+      if (state.isCancelled) break;
 
       const batch = nodes.slice(i, i + BATCH_SIZE);
 
       for (const node of batch) {
-        if (cancelled) break;
+        if (state.isCancelled) break;
 
         visited++;
         updateLoadingProgress(Math.round((visited / nodes.length) * 100));
@@ -317,7 +326,7 @@ async function run(): Promise<void> {
         const before = node.characters;
         if (!before) continue;
         if (before.length > MAX_SEGMENT_LENGTH) {
-          skippedTooLong++;
+          stats.skippedTooLong++;
           continue;
         }
 
@@ -326,11 +335,11 @@ async function run(): Promise<void> {
         // Маска уже length-preserving, поэтому индексы не сдвигаются.
         const { masked: maskedForDetect } = maskSensitive(before);
         const lang = detectLanguage(maskedForDetect);
-        langStats.set(lang, (langStats.get(lang) ?? 0) + 1);
+        stats.byLang.set(lang, (stats.byLang.get(lang) ?? 0) + 1);
 
         const replacements = planReplacements(before, lang);
         if (replacements === null) {
-          skippedTooLong++;
+          stats.skippedTooLong++;
           continue;
         }
 
@@ -351,16 +360,16 @@ async function run(): Promise<void> {
 
         const ok = await loadFontsForNode(node);
         if (!ok) {
-          skippedFonts++;
+          stats.skippedFonts++;
           continue;
         }
 
         try {
           applyReplacements(node, replacements);
-          totalChanges += replacements.length;
-          affectedNodes++;
+          stats.totalChanges += replacements.length;
+          stats.affectedNodes++;
         } catch {
-          skippedFonts++;
+          stats.skippedFonts++;
         }
       }
 
@@ -373,39 +382,39 @@ async function run(): Promise<void> {
 
 function buildSummaryLines(): string[] {
   const lines: string[] = [];
-  const statusKey = cancelled ? "cancelledStat" : "doneStat";
-  const summary = t(uiLocale, "summaryStat", {
-    changes: totalChanges,
-    nodes: affectedNodes,
+  const statusKey = state.isCancelled ? "cancelledStat" : "doneStat";
+  const summary = t(state.uiLocale, "summaryStat", {
+    changes: stats.totalChanges,
+    nodes: stats.affectedNodes,
   });
-  lines.push(t(uiLocale, statusKey) + " " + summary);
-  if (langStats.size) {
-    lines.push(t(uiLocale, "languagesStat", { list: formatLangList() }));
+  lines.push(t(state.uiLocale, statusKey) + " " + summary);
+  if (stats.byLang.size) {
+    lines.push(t(state.uiLocale, "languagesStat", { list: formatLangList() }));
   }
-  if (skippedFonts) lines.push(t(uiLocale, "skippedFontsStat", { n: skippedFonts }));
-  if (skippedTooLong) lines.push(t(uiLocale, "skippedLongStat", { n: skippedTooLong }));
-  if (truncated) {
-    lines.push(t(uiLocale, "limitStat", { limit: MAX_NODES, total: totalAllNodes }));
+  if (stats.skippedFonts) lines.push(t(state.uiLocale, "skippedFontsStat", { n: stats.skippedFonts }));
+  if (stats.skippedTooLong) lines.push(t(state.uiLocale, "skippedLongStat", { n: stats.skippedTooLong }));
+  if (state.isTruncated) {
+    lines.push(t(state.uiLocale, "limitStat", { limit: MAX_NODES, total: stats.totalAllNodes }));
   }
-  lines.push(t(uiLocale, "undoHint"));
+  lines.push(t(state.uiLocale, "undoHint"));
   return lines;
 }
 
 function showFinalSummary(): void {
-  if (summaryShown) return;
-  summaryShown = true;
-  if (hasError) {
-    figma.notify(t(uiLocale, "errorStat", { message: errorMessage }), {
+  if (state.isSummaryShown) return;
+  state.isSummaryShown = true;
+  if (state.hasError) {
+    figma.notify(t(state.uiLocale, "errorStat", { message: state.errorMessage }), {
       error: true,
       timeout: FINAL_NOTICE_TIMEOUT_MS,
     });
     return;
   }
-  if (noTextLayers) {
-    figma.notify(t(uiLocale, "noTextLayersStat"), { timeout: FINAL_NOTICE_TIMEOUT_MS });
+  if (state.hasNoTextLayers) {
+    figma.notify(t(state.uiLocale, "noTextLayersStat"), { timeout: FINAL_NOTICE_TIMEOUT_MS });
     return;
   }
-  if (!runStarted) {
+  if (!state.isRunStarted) {
     // Закрыли раньше, чем что-либо началось (например, до init). Молчим.
     return;
   }
@@ -429,8 +438,8 @@ figma.on("run", async () => {
   try {
     await run();
   } catch (e) {
-    hasError = true;
-    errorMessage = e instanceof Error ? e.message : String(e);
+    state.hasError = true;
+    state.errorMessage = e instanceof Error ? e.message : String(e);
   } finally {
     figma.closePlugin();
   }
