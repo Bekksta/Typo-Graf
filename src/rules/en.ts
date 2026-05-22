@@ -145,6 +145,15 @@ function normalizeRangesEn(text: string): string {
   return text.replace(RANGE_RE, `$1${EN_DASH}$2`);
 }
 
+// Группировка тысяч (5+ цифр) запятой-разделителем — англоязычная норма.
+// Применяется к произвольным числам, не только к валютным префиксам
+// (formatLeadingCurrency уже отрабатывает $1234 → $1,234).
+function groupThousandsEn(text: string): string {
+  return text.replace(/\b\d{5,}\b/g, (n) =>
+    n.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  );
+}
+
 // ===== 6) NBSP после проклитик (артиклей/предлогов/союзов) =====
 // NB: в ТЗ §3.3 явно "Артикли/предлоги НЕ склеиваем NBSP".
 //     В разделе "Готовый функционал" — обратное. Оставлено по факту реализации,
@@ -171,7 +180,7 @@ function tightenHonorifics(text: string): string {
   return text.replace(HONORIFICS_RE, `$1.${NBSP}`);
 }
 
-// Латинские сокращения e.g. / i.e. / etc. / vs.
+// Латинские сокращения e.g. / i.e. / etc. / vs. / cf.
 // Внутри e.g. и i.e. ставим NBSP (по строгой типографике), и NBSP после
 // всего сокращения перед следующим словом.
 function tightenLatinAbbrs(text: string): string {
@@ -181,7 +190,7 @@ function tightenLatinAbbrs(text: string): string {
   text = text.replace(/\bi\.\s*e\.(?=\s|,|;|:|\)|$)/g, `i.${NBSP}e.`);
   // 2) NBSP после сокращения, если дальше идёт обычное слово
   text = text.replace(
-    /(e\. g\.|i\. e\.|etc\.|vs\.)\s+(?=\S)/g,
+    /(e\. g\.|i\. e\.|etc\.|vs\.|cf\.)\s+(?=\S)/g,
     `$1${NBSP}`
   );
   return text;
@@ -195,6 +204,7 @@ export function applyEnglishRules(input: string): string {
   t = normalizeEmDashEn(t);
   t = normalizeRangesEn(t);
   t = tightenUnitsAndPercentsEn(t);
+  t = groupThousandsEn(t);
   t = tightenLatinAbbrs(t);
   t = tightenHonorifics(t);
   t = glueProclitics(t);

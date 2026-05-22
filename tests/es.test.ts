@@ -30,3 +30,16 @@ describe("es: paired ¿…? / ¡…!", () => {
   test("Multi: Hola. Cómo estás? → Hola. ¿Cómo estás?", () =>
     E("multi", "Hola. Cómo estás?", "Hola. ¿Cómo estás?"));
 });
+
+describe("es: thousands grouping (NBSP per RAE)", () => {
+  test("1234567 → 1 234 567", () =>
+    E("groupThousands", "presupuesto 1234567 euros", `presupuesto 1${NBSP}234${NBSP}567 euros`));
+  test("1234 (4 цифры) — не группируется", () =>
+    E("groupThousandsShort", "1234 unidades", "1234 unidades"));
+  test("12345 (5 цифр) — граничный кейс", () =>
+    E("groupThousandsBoundary", "12345 registros", `12${NBSP}345 registros`));
+  test("'1234567 €' — число группируется + NBSP перед валютой", () =>
+    E("groupThousandsCurrency", "1234567 €", `1${NBSP}234${NBSP}567${NBSP}€`));
+  test("año '2024' — не трогаем", () =>
+    E("groupThousandsYear", "en 2024", "en 2024"));
+});

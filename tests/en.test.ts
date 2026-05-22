@@ -53,7 +53,7 @@ describe("en: currency", () => {
     E("currency", "300 $", `300${NBSP}$`));
 });
 
-describe("en: latin abbreviations e.g./i.e./etc./vs.", () => {
+describe("en: latin abbreviations e.g./i.e./etc./vs./cf.", () => {
   test("e.g. → e.NBSPg.NBSPfoo", () =>
     E("eg", "e.g. for example", `e.${NBSP}g.${NBSP}for example`));
   test("i.e. → i.NBSPe.NBSPfoo", () =>
@@ -62,8 +62,23 @@ describe("en: latin abbreviations e.g./i.e./etc./vs.", () => {
     E("etc", "lemons, oranges etc. today", `lemons, oranges etc.${NBSP}today`));
   test("vs. → vs.NBSPnext", () =>
     E("vs", "Tom vs. Jerry", `Tom vs.${NBSP}Jerry`));
+  test("cf. → cf.NBSPnext", () =>
+    E("cf", "see cf. Smith 1999", `see cf.${NBSP}Smith 1999`));
   test("e.g., с запятой — запятая прилипает", () =>
     E("egComma", "e.g., apples and pears", `e.${NBSP}g., apples and${NBSP}pears`));
+});
+
+describe("en: thousands grouping (общая, не только валютная)", () => {
+  test("1234567 → 1,234,567 (без валюты)", () =>
+    E("groupThousandsPlain", "1234567 items", "1,234,567 items"));
+  test("1234 — НЕ группируется (<5 цифр)", () =>
+    E("groupThousandsShort", "1234 items", "1234 items"));
+  test("12345 (5 цифр) — граничный кейс", () =>
+    E("groupThousandsBoundary", "12345 records", "12,345 records"));
+  test("$1234 — валютная группировка работает как раньше", () =>
+    E("groupThousandsCurrency", "$1234", "$1,234"));
+  test("год '2024' (4 цифры) — не трогаем", () =>
+    E("groupThousandsYear", "in 2024", `in${NBSP}2024`));
 });
 
 describe("en: honorifics + NBSP", () => {

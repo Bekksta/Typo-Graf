@@ -104,9 +104,10 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 - `--` → `—` without forcing surrounding spaces (follows source style).
 - Ranges: `10-12 km` → `10–12 km`.
 - Currency: `$1234.5` → `$1,234.5` (US format). `$ 300` / `300 $` order preserved, NBSP added.
+- Thousands grouping (≥5 digits) with comma for any number, not just currency: `1234567 items` → `1,234,567 items`. Years (`2024`) and 4-digit IDs stay.
 - NBSP after service words (`a`, `an`, `the`, `and`, `but`, `or`, `to`, `of`, `in`, `on`, `at`, `by`, `as`, `I`).
 - NBSP before units: `15 km`, `20 %`, `60 mph`, `5 dB`, `100 MHz`.
-- Latin abbreviations: `e.g.` → `e. g.`, `i.e.` → `i. e.` (with NBSP inside), then NBSP between the abbr and the next word: `e.g. for example` → `e. g. for example`. Same for `etc.` and `vs.`
+- Latin abbreviations: `e.g.` → `e. g.`, `i.e.` → `i. e.` (with NBSP inside), then NBSP between the abbr and the next word: `e.g. for example` → `e. g. for example`. Same for `etc.`, `vs.`, `cf.`
 - Honorifics + NBSP: `Dr. Smith` → `Dr. Smith`, also `Mr.`, `Mrs.`, `Ms.`, `Prof.`, `St.`, `Sr.`, `Jr.`, `Rev.`, `Capt.`, `Lt.`, `Col.`, `Gen.` — only when followed by a capitalized name. At the end of a sentence the abbreviation is left alone.
 
 ### French (`fr`)
@@ -168,6 +169,7 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 
 - Quotes `“…”` by default. If `«…»` is already used — left alone.
 - NBSP before units and currency.
+- Thousands grouping (≥5 digits) with NBSP: `1234567` → `1 234 567`. Follows RAE; works across both `es-ES` (where the convention is a dot) and `es-MX`/`es-419` (where it's a comma) without locale detection.
 - Paired `¿…?` and `¡…!`: if a sentence ends with `?` or `!`, starts with a capital letter and doesn't already contain `¿`/`¡`, the opening mark is added. Only single-sentence cases are touched, so rhetorical fragments with mid-sentence punctuation aren't accidentally rewritten.
 
 ### BCS (`bs`/`hr`/`sr` Latin)

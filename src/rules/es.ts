@@ -41,6 +41,16 @@ function pairSpanishQuestionExclamation(text: string): string {
   });
 }
 
+// Группировка тысяч (5+ цифр) NBSP-разделителем. RAE рекомендует
+// неразрывный пробел вместо точки/запятой, чтобы избежать путаницы между
+// форматами es-ES (`1.234.567`) и es-MX/es-419 (`1,234,567`). Без детекта
+// локали NBSP — единственный безопасный выбор: его узнают и в ES, и в LatAm.
+function groupThousandsEs(text: string): string {
+  return text.replace(/\b\d{5,}\b/g, (n) =>
+    n.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
+  );
+}
+
 export function applySpanishRules(input: string): string {
   let t = input;
   t = placeSpanishQuotes(t);
@@ -48,5 +58,6 @@ export function applySpanishRules(input: string): string {
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });
+  t = groupThousandsEs(t);
   return t;
 }
