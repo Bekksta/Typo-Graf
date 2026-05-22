@@ -10,13 +10,20 @@ export const EN_DASH = "–";
 export const EM_DASH = "—";
 export const ELLIPSIS = "…";
 
+// Word Joiner (U+2060) — невидимый zero-width неразрывный связыватель.
+// Запрещает перенос строки в той точке, не оставляя следов в визуальном
+// представлении. Используется для дат и числовых диапазонов с em-dash.
+export const WORD_JOINER = "⁠";
+
 export const PRIME = "′";
-export const DBL_PRM = "″";
-export const L_DQ = "“";
-export const R_DQ = "”";
-export const L_SQ = "‘";
-export const R_SQ = "’";
+export const DOUBLE_PRIME = "″";
+export const LEFT_DQUOTE = "“";
+export const RIGHT_DQUOTE = "”";
+export const LEFT_SQUOTE = "‘";
+export const RIGHT_SQUOTE = "’";
 
 // Любой «пробельный» символ нашей типографики: space, NBSP, THIN, NNBSP, TAB.
-export const SP_ANY_CLASS = /[    \t]/;
-export const SP_ANY_SRC = "[ \\u00A0\\u2009\\u202F\\t]";
+// _CLASS — regex literal для прямого использования (`ANY_SPACE_CLASS.test(ch)`).
+// _SRC — строка для сборки regex через `new RegExp(...)`.
+export const ANY_SPACE_CLASS = /[    \t]/;
+export const ANY_SPACE_SRC = "[ \\u00A0\\u2009\\u202F\\t]";

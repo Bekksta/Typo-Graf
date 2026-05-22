@@ -4,7 +4,7 @@
 // - NBSP перед единицами / валютой (R$, $, €, %)
 // - ¿/¡ не используются; искусственных пробелов вокруг :;!? не добавляем
 // - Десятичная запятая 3,14 не трогается
-import { NBSP, SP_ANY_SRC, L_DQ, R_DQ } from "../lang/maps";
+import { NBSP, ANY_SPACE_SRC, LEFT_DQUOTE, RIGHT_DQUOTE } from "../lang/maps";
 import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex({
@@ -23,7 +23,7 @@ function placePortugueseQuotes(text: string): string {
   for (let i = 0; i < t.length; i++) {
     const ch = t[i];
     if (ch === '"') {
-      out += open ? L_DQ : R_DQ;
+      out += open ? LEFT_DQUOTE : RIGHT_DQUOTE;
       open = !open;
     } else {
       out += ch;

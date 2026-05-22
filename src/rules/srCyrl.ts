@@ -7,7 +7,7 @@
 // Реализация повторно использует уже отлаженные блоки ru-правил
 // и просто заменяет smart-quotes на „…".
 import { applyRussianRules } from "./ru";
-import { NBSP, SP_ANY_SRC } from "../lang/maps";
+import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
 
 // Заменяем ёлочки «…», поставленные ru-обработчиком, на „…" (открывающая
 // нижняя, закрывающая верхняя — стандартная сербская типографика).

@@ -4,7 +4,7 @@
 // - Число + Einheit/Währung/% → NBSP
 // - Десятичную запятую НЕ трогаем
 // - Диапазоны 10–12 kg (en dash) — уже сделано в common
-import { NBSP, SP_ANY_SRC } from "../lang/maps";
+import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
 import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);

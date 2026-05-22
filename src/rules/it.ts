@@ -4,7 +4,7 @@
 // - NBSP после коротких предлогов (di, a, da, in, con, su, per, fra, tra, e, o)
 // - Сокращения с точкой (Sig., Sig.ra, Sigg., Dott., Dott.ssa, Egr.) → NBSP после
 // - Число + единица/валюта/% → NBSP
-import { NBSP, SP_ANY_SRC } from "../lang/maps";
+import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
 import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
@@ -22,13 +22,13 @@ const PROCLITICS = [
 // \b в JS не понимает Unicode-границы слов даже с 'u' — используем явный
 // lookbehind по non-letter/non-digit. Регистронезависимо (Il/IL/il/...).
 const PROCLITICS_RE = new RegExp(
-  `(?<![\\p{L}\\p{N}])(${PROCLITICS.join("|")})${SP_ANY_SRC}+(?=[\\p{L}\\p{N}])`,
+  `(?<![\\p{L}\\p{N}])(${PROCLITICS.join("|")})${ANY_SPACE_SRC}+(?=[\\p{L}\\p{N}])`,
   "giu"
 );
 
 const DOT_ABBR = ["Sig", "Sigg", "Sig\\.ra", "Sig\\.na", "Dott", "Dott\\.ssa", "Egr", "Prof", "Avv", "Arch", "Ing", "Geom"];
 const DOT_ABBR_RE = new RegExp(
-  `\\b(${DOT_ABBR.join("|")})\\.${SP_ANY_SRC}+(?=[A-ZÀÁÈÉÌÍÒÓÙÚ])`,
+  `\\b(${DOT_ABBR.join("|")})\\.${ANY_SPACE_SRC}+(?=[A-ZÀÁÈÉÌÍÒÓÙÚ])`,
   "g"
 );
 

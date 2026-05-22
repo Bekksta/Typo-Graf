@@ -6,7 +6,7 @@ import {
   COMPOSITE_ABBR_RULES,
   QUANTIFIER_NOUNS,
 } from "../lib/ruLib";
-import { NBSP, NBH, SP_ANY_CLASS, SP_ANY_SRC, EM_DASH } from "../lang/maps";
+import { NBSP, NBH, ANY_SPACE_CLASS, ANY_SPACE_SRC, EM_DASH, WORD_JOINER } from "../lang/maps";
 import { preserveCase } from "../lib/commonCase";
 import { applyYoFix } from "./yoPairs";
 
@@ -17,7 +17,7 @@ export function glueProclitics(text: string): string {
   const re = new RegExp(
     `(^|[\\s(>])(${PROCLITICS.join(
       "|"
-    )})(?:${SP_ANY_SRC})(?=[A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\xAB])`,
+    )})(?:${ANY_SPACE_SRC})(?=[A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\xAB])`,
     "gmi"
   );
   return text.replace(re, (_m, pre, w) => pre + w + NBSP);
@@ -75,7 +75,7 @@ export function nbspAfterAbbr(text: string): string {
   // "г." (город) — NBSP только если слева НЕ цифра
   out = out.replace(/г\.(?:[ \u00A0\u2009\u202F\t]+)(?=[А-ЯЁ])/g, (m, off) => {
     let i = (off as number) - 1;
-    while (i >= 0 && SP_ANY_CLASS.test(out[i])) i--;
+    while (i >= 0 && ANY_SPACE_CLASS.test(out[i])) i--;
     const prev = i >= 0 ? out[i] : "";
     if (/\d/.test(prev)) return m; // это "год", не трогаем тут
     if (prev === "г") return m;    // второй "г" в "гг." — пропускаем
@@ -96,7 +96,7 @@ export function nbspAfterAbbr(text: string): string {
   const reAbbrDot = new RegExp(
     `(?<![\\p{L}\\p{N}])(?:(${DOT_UNIT_ABBR.join("|")})|(${DOT_GENERIC_ABBR.join(
       "|"
-    )}))\\.(?:${SP_ANY_SRC}+)(?=\\S)`,
+    )}))\\.(?:${ANY_SPACE_SRC}+)(?=\\S)`,
     "giu"
   );
   out = out.replace(
@@ -111,7 +111,7 @@ export function nbspAfterAbbr(text: string): string {
       // PREV non-space char: если слева цифра, аббревиатура замыкает число
       // («1991 г.», «5 кг.») — NBSP справа не нужен.
       let pi = off - 1;
-      while (pi >= 0 && SP_ANY_CLASS.test(out[pi])) pi--;
+      while (pi >= 0 && ANY_SPACE_CLASS.test(out[pi])) pi--;
       const prev = pi >= 0 ? out[pi] : "";
       if (unit && /\d/.test(prev)) {
         return m.replace(/\u00A0/g, " ");
@@ -134,7 +134,7 @@ export function nbspAfterAbbr(text: string): string {
         }
       }
       let i = off + m.length;
-      while (i < out.length && SP_ANY_CLASS.test(out[i])) i++;
+      while (i < out.length && ANY_SPACE_CLASS.test(out[i])) i++;
       const next = out[i] || "";
       if (unit && /\d/.test(next)) {
         // единицы + цифра: НЕ склеиваем справа
@@ -147,7 +147,7 @@ export function nbspAfterAbbr(text: string): string {
         return m.replace(/\u00A0/g, " ");
       }
       // служебные и единицы без цифры — NBSP
-      return m.replace(new RegExp(`${SP_ANY_SRC}+`, "g"), NBSP);
+      return m.replace(new RegExp(`${ANY_SPACE_SRC}+`, "g"), NBSP);
     }
   );
 
@@ -171,20 +171,20 @@ export function fixHyphenatedAbbr(text: string): string {
     const parts = raw.split("-");
     const pattern = parts.map(escRe).join(H);
     const re = new RegExp(
-      `${pattern}(?![A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u0451])(?:${SP_ANY_SRC}+)?(?=\\S)`,
+      `${pattern}(?![A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u0451])(?:${ANY_SPACE_SRC}+)?(?=\\S)`,
       "gi"
     );
     out = out.replace(re, (m: string, offset: number) => {
       let glued = m.replace(new RegExp(H, "g"), NBH);
       // если далее буква — NBSP после; иначе — просто сжать хвостовые пробелы
       let i = offset + m.length;
-      while (i < out.length && SP_ANY_CLASS.test(out[i])) i++;
+      while (i < out.length && ANY_SPACE_CLASS.test(out[i])) i++;
       const next = out[i] || "";
       if (/[A-Za-zА-Яа-яЁё]/.test(next)) {
-        glued = glued.replace(new RegExp(`${SP_ANY_SRC}+$`), "");
+        glued = glued.replace(new RegExp(`${ANY_SPACE_SRC}+$`), "");
         return glued.endsWith(NBSP) ? glued : glued + NBSP;
       } else {
-        return glued.replace(new RegExp(`${SP_ANY_SRC}+$`), "");
+        return glued.replace(new RegExp(`${ANY_SPACE_SRC}+$`), "");
       }
     });
   }
@@ -216,21 +216,21 @@ export function normalizeEmDash(text: string): string {
   
   let out = text;
   // двойной дефис → em dash
-  out = out.replace(new RegExp(`(${SP_ANY_SRC}*)--(${SP_ANY_SRC}*)`, "g"), ` ${EM_DASH} `);
+  out = out.replace(new RegExp(`(${ANY_SPACE_SRC}*)--(${ANY_SPACE_SRC}*)`, "g"), ` ${EM_DASH} `);
   // дефис/ен-даш между не-числами → em dash
   out = out.replace(
     /([^\d\s])\s[-–]\s([^\d\s])/g,
     (_m, a: string, b: string) => `${a} ${EM_DASH} ${b}`
   );
   // унификация уже стоящего em dash: NBSP слева, обычный пробел справа.
-  // ИСКЛЮЧЕНИЯ: цифры с обеих сторон (диапазон вида 1991—1995) и WJ-обёртка
-  // (U+2060) — её ставит `convertDateRanges` для дата-диапазонов, чтобы
-  // запретить перенос; повторно её трогать нельзя.
+  // ИСКЛЮЧЕНИЯ: цифры с обеих сторон (диапазон вида 1991—1995) и WORD_JOINER-
+  // обёртка (U+2060) — её ставит `convertDateRanges` для дата-диапазонов,
+  // чтобы запретить перенос; повторно её трогать нельзя.
   out = out.replace(
     /(\S)[ \u00A0\u2009\u202F\t]*—[ \u00A0\u2009\u202F\t]*(\S)/g,
     (m, a: string, b: string) => {
       if (/\d/.test(a) && /\d/.test(b)) return m;
-      if (a === "\u2060" || b === "\u2060") return m;
+      if (a === WORD_JOINER || b === WORD_JOINER) return m;
       return `${a}${NBSP}${EM_DASH} ${b}`;
     }
   );
@@ -252,15 +252,14 @@ const MONTH_RANGE_RE = new RegExp(
   "giu"
 );
 
-// WORD JOINER (U+2060) — non-breaking, zero-width. Оборачиваем em-dash в
+// WORD_JOINER (U+2060) — non-breaking, zero-width. Оборачиваем em-dash в
 // числовых/месячных диапазонах, иначе Figma по правилам UAX#14 рвёт строку
 // прямо по em-dash: `1799—|1837` уезжает на новую строку, и `гг.` остаётся
-// один. WJ запрещает перенос — диапазон становится неразрывным целиком.
-const WJ = "\u2060";
+// один. WORD_JOINER запрещает перенос — диапазон становится неразрывным целиком.
 export function convertDateRanges(text: string): string {
-  text = text.replace(YEAR_RANGE_RE, `$1${WJ}${EM_DASH}${WJ}$2`);
+  text = text.replace(YEAR_RANGE_RE, `$1${WORD_JOINER}${EM_DASH}${WORD_JOINER}$2`);
   text = text.replace(MONTH_RANGE_RE, (_m, a: string, b: string) =>
-    `${a}${WJ}${EM_DASH}${WJ}${b}`
+    `${a}${WORD_JOINER}${EM_DASH}${WORD_JOINER}${b}`
   );
   return text;
 }
@@ -315,9 +314,9 @@ export function glueNumQuantifiers(text: string): string {
 // Перед %, ‰, ₽, €, $ ПРОБЕЛ НЕ удаляем — по ТЗ там должен стоять NBSP,
 // который проставляется в common/lang-правилах; иначе он бы здесь срезался.
 export function removeSpacesBeforePunctuation(text: string): string {
-  text = text.replace(new RegExp(`${SP_ANY_SRC}+([.,!?;:])`, "g"), "$1");
-  text = text.replace(new RegExp(`${SP_ANY_SRC}+(\\u2026)`, "g"), "$1");
-  text = text.replace(new RegExp(`${SP_ANY_SRC}+([)\\xBB])`, "g"), "$1");
+  text = text.replace(new RegExp(`${ANY_SPACE_SRC}+([.,!?;:])`, "g"), "$1");
+  text = text.replace(new RegExp(`${ANY_SPACE_SRC}+(\\u2026)`, "g"), "$1");
+  text = text.replace(new RegExp(`${ANY_SPACE_SRC}+([)\\xBB])`, "g"), "$1");
   // убрать случайные пробелы из URL (на всякий)
   text = text.replace(/https?:\/\/[^\s]+/g, (m) => m.replace(/ /g, ""));
   return text;

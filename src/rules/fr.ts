@@ -2,13 +2,13 @@
 // - Перед ; : ? ! и закрывающей » — узкий NBSP (NNBSP, U+202F)
 // - Гийеметы « … » с узкими NBSP внутри
 // - Число + единица/валюта/% → узкий NBSP
-import { NNBSP, NBSP, SP_ANY_SRC, EM_DASH } from "../lang/maps";
+import { NNBSP, NBSP, ANY_SPACE_SRC, EM_DASH } from "../lang/maps";
 import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
 
 // Перед ;:?! ставим NNBSP. Не трогаем `:` внутри URL/email — они замаскированы.
-const PUNCT_BEFORE_RE = new RegExp(`${SP_ANY_SRC}*([;:!?»])`, "g");
+const PUNCT_BEFORE_RE = new RegExp(`${ANY_SPACE_SRC}*([;:!?»])`, "g");
 
 // Smart apostrophe для liaison: l', d', n', s', c', j', m', t', qu', jusqu', etc.
 // Заменяем ASCII ' (или naive ' ') на ’ (U+2019) между буквами с одной
@@ -36,8 +36,8 @@ function placeGuillemets(text: string): string {
 }
 
 // 2) Узкие NBSP сразу после « и перед »
-const OPEN_GUILLEMET_SPACE_RE = new RegExp(`«${SP_ANY_SRC}*`, "g");
-const CLOSE_GUILLEMET_SPACE_RE = new RegExp(`${SP_ANY_SRC}*»`, "g");
+const OPEN_GUILLEMET_SPACE_RE = new RegExp(`«${ANY_SPACE_SRC}*`, "g");
+const CLOSE_GUILLEMET_SPACE_RE = new RegExp(`${ANY_SPACE_SRC}*»`, "g");
 
 function tightenGuillemets(text: string): string {
   return text

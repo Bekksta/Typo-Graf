@@ -4,7 +4,7 @@
 // - Десятичная запятая 3,14 не трогается
 // - В нидерландской типографике короткие предлоги/артикли (de, het, een,
 //   van, op, te, in, met) НЕ требуют NBSP — оставляем обычные пробелы.
-import { NBSP, SP_ANY_SRC } from "../lang/maps";
+import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
 import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);

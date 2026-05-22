@@ -2,7 +2,7 @@
 // - Кавычки „…" или «…» — нормализуем по встреченному варианту
 //   (если есть «…» — оставляем; если „…" — оставляем; иначе по умолчанию „…")
 // - Число + единица/валюта/% → NBSP
-import { NBSP, SP_ANY_SRC } from "../lang/maps";
+import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
 import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);

@@ -2,7 +2,7 @@
 // - Кавычки по умолчанию "…" (или «…» если уже встречены — оставляем)
 // - Число + единица/валюта/% → NBSP
 // - ¿ ¡ оставляем, пробелы вокруг :;!? искусственно НЕ добавляем
-import { NBSP, SP_ANY_SRC, L_DQ, R_DQ } from "../lang/maps";
+import { NBSP, ANY_SPACE_SRC, LEFT_DQUOTE, RIGHT_DQUOTE } from "../lang/maps";
 import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
@@ -18,7 +18,7 @@ function placeSpanishQuotes(text: string): string {
   for (let i = 0; i < t.length; i++) {
     const ch = t[i];
     if (ch === '"') {
-      out += open ? L_DQ : R_DQ;
+      out += open ? LEFT_DQUOTE : RIGHT_DQUOTE;
       open = !open;
     } else {
       out += ch;

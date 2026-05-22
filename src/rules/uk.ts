@@ -3,7 +3,7 @@
 // - №/§/стор./рис./м. + число/слово → узкий NBSP
 // - Число + единица/валюта/% → узкий NBSP
 // - Кавычки «…»
-import { NBSP, NNBSP, SP_ANY_SRC } from "../lang/maps";
+import { NBSP, NNBSP, ANY_SPACE_SRC } from "../lang/maps";
 import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
@@ -11,12 +11,12 @@ const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
 // \b в JS не понимает границ Unicode-слов даже с флагом 'u' — используем
 // явный lookbehind по non-letter/non-digit.
 const PROCLITICS_RE = new RegExp(
-  `(?<![\\p{L}\\p{N}])(в|у|з|із|й|та|а|і)${SP_ANY_SRC}+(?=\\S)`,
+  `(?<![\\p{L}\\p{N}])(в|у|з|із|й|та|а|і)${ANY_SPACE_SRC}+(?=\\S)`,
   "giu"
 );
 
 const TOKEN_NUM_RE = new RegExp(
-  `(№|§|стор\\.|рис\\.|м\\.)${SP_ANY_SRC}+(?=\\S)`,
+  `(№|§|стор\\.|рис\\.|м\\.)${ANY_SPACE_SRC}+(?=\\S)`,
   "g"
 );
 

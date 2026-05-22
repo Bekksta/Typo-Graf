@@ -3,28 +3,28 @@ import {
   NBSP,
   EN_DASH,
   EM_DASH,
-  SP_ANY_SRC,
+  ANY_SPACE_SRC,
   PRIME,
-  DBL_PRM,
-  L_DQ,
-  R_DQ,
-  L_SQ,
-  R_SQ,
+  DOUBLE_PRIME,
+  LEFT_DQUOTE,
+  RIGHT_DQUOTE,
+  LEFT_SQUOTE,
+  RIGHT_SQUOTE,
 } from "../lang/maps";
 import { PROCLITICS, UNIT_LIST } from "../lib/enLib";
 
 // ===== 1) Праймы: 12'' / 12" → 12″ ; 12' → 12′ =====
 const DBL_PRIME_RE = new RegExp(
-  `(\\d)${SP_ANY_SRC}*(?:''|["”]|\\u2033)`,
+  `(\\d)${ANY_SPACE_SRC}*(?:''|["”]|\\u2033)`,
   "g"
 );
 const SINGLE_PRIME_RE = new RegExp(
-  `(\\d)${SP_ANY_SRC}*(?:'|’|\\u2032)(?!['”"\\u2033])`,
+  `(\\d)${ANY_SPACE_SRC}*(?:'|’|\\u2032)(?!['”"\\u2033])`,
   "g"
 );
 
 function normalizePrimes(text: string): string {
-  return text.replace(DBL_PRIME_RE, `$1${DBL_PRM}`).replace(SINGLE_PRIME_RE, `$1${PRIME}`);
+  return text.replace(DBL_PRIME_RE, `$1${DOUBLE_PRIME}`).replace(SINGLE_PRIME_RE, `$1${PRIME}`);
 }
 
 // ===== 2) Smart quotes + nested quotes =====
@@ -32,11 +32,11 @@ function smartQuotesEn(input: string): string {
   let text = input.replace(/[“”„‟]/g, '"').replace(/[‘’‚‛]/g, "'");
 
   // апострофы внутри слова → ’ (числовые праймы уже сняты выше)
-  text = text.replace(/\b([A-Za-z]+)'([A-Za-z]+)\b/g, `$1${R_SQ}$2`);
+  text = text.replace(/\b([A-Za-z]+)'([A-Za-z]+)\b/g, `$1${RIGHT_SQUOTE}$2`);
   // Word-end apostrophe: для 'lovers'' '\b' после '\'' не срабатывает,
   // т.к. оба — non-word. Используем явный lookahead "не буква".
-  text = text.replace(/([A-Za-z])'(?![A-Za-z])/g, `$1${R_SQ}`);
-  text = text.replace(/(?<![A-Za-z])'([A-Za-z]+)\b/g, `${R_SQ}$1`);
+  text = text.replace(/([A-Za-z])'(?![A-Za-z])/g, `$1${RIGHT_SQUOTE}`);
+  text = text.replace(/(?<![A-Za-z])'([A-Za-z]+)\b/g, `${RIGHT_SQUOTE}$1`);
 
   // Парные двойные кавычки “…”
   let out = "";
@@ -44,7 +44,7 @@ function smartQuotesEn(input: string): string {
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch === '"') {
-      out += open ? L_DQ : R_DQ;
+      out += open ? LEFT_DQUOTE : RIGHT_DQUOTE;
       open = !open;
     } else {
       out += ch;
@@ -57,19 +57,19 @@ function smartQuotesEn(input: string): string {
   let openS = true;
   for (let i = 0; i < out.length; i++) {
     const ch = out[i];
-    if (ch === L_DQ) {
+    if (ch === LEFT_DQUOTE) {
       inside = true;
       openS = true;
       nested += ch;
       continue;
     }
-    if (ch === R_DQ) {
+    if (ch === RIGHT_DQUOTE) {
       inside = false;
       nested += ch;
       continue;
     }
     if (inside && ch === "'") {
-      nested += openS ? L_SQ : R_SQ;
+      nested += openS ? LEFT_SQUOTE : RIGHT_SQUOTE;
       openS = !openS;
     } else {
       nested += ch;
@@ -78,8 +78,8 @@ function smartQuotesEn(input: string): string {
   out = nested;
 
   // Косметика: пробелы у краёв кавычек, пунктуация внутрь
-  out = out.replace(new RegExp(`${L_DQ}${SP_ANY_SRC}+`, "g"), L_DQ);
-  out = out.replace(new RegExp(`${SP_ANY_SRC}+${R_DQ}`, "g"), R_DQ);
+  out = out.replace(new RegExp(`${LEFT_DQUOTE}${ANY_SPACE_SRC}+`, "g"), LEFT_DQUOTE);
+  out = out.replace(new RegExp(`${ANY_SPACE_SRC}+${RIGHT_DQUOTE}`, "g"), RIGHT_DQUOTE);
 
   return out;
 }
@@ -102,9 +102,9 @@ const UNITS = UNIT_LIST.map((u) =>
   u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 ).join("|");
 
-const PERCENT_RE = new RegExp(`(\\d+)${SP_ANY_SRC}*%`, "g");
+const PERCENT_RE = new RegExp(`(\\d+)${ANY_SPACE_SRC}*%`, "g");
 const UNIT_RE = new RegExp(
-  `(\\d+)${SP_ANY_SRC}+(${UNITS})(?![A-Za-z0-9])`,
+  `(\\d+)${ANY_SPACE_SRC}+(${UNITS})(?![A-Za-z0-9])`,
   "g"
 );
 // ($|£|€) [пробелы] число[.,доли] — нормализуем формат и убираем пробел.
@@ -116,7 +116,7 @@ const LEADING_CURRENCY_RE =
 const US_THOUSANDS_RE = /([$£€]\d{1,3})\.(\d{3})(?!\d)/g;
 // Число + пробел + валютный знак справа: "300 $" → "300 NBSP $"
 const TRAILING_CURRENCY_RE = new RegExp(
-  `(\\d)${SP_ANY_SRC}+([$£€])`,
+  `(\\d)${ANY_SPACE_SRC}+([$£€])`,
   "g"
 );
 
@@ -162,7 +162,7 @@ const PROCLITICS_RE = PROCLITICS.length
   ? new RegExp(
       `\\b(${PROCLITICS.map((w) =>
         w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-      ).join("|")})${SP_ANY_SRC}+(?=\\S)`,
+      ).join("|")})${ANY_SPACE_SRC}+(?=\\S)`,
       "gi"
     )
   : null;

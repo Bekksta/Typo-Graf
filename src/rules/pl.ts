@@ -4,7 +4,7 @@
 //   и пары z/ze, w/we — стандарт польской типографики.
 // - NBSP перед единицами / валютой (zł, %, €, $)
 // - Десятичная запятая (3,14) не трогается.
-import { NBSP, SP_ANY_SRC } from "../lang/maps";
+import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
 import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex({
@@ -15,7 +15,7 @@ const UNIT_RE = makeNumberUnitRegex({
 // Однобуквенные предлоги и союзы, после которых ставится NBSP.
 // Включаем варианты 'ze', 'we' — фонетические формы 'z/w' перед стечениями согласных.
 const PROCLITICS_RE = new RegExp(
-  `(?<![\\p{L}\\p{N}])(i|a|o|u|w|z|ze|we)${SP_ANY_SRC}+(?=[\\p{L}\\p{N}])`,
+  `(?<![\\p{L}\\p{N}])(i|a|o|u|w|z|ze|we)${ANY_SPACE_SRC}+(?=[\\p{L}\\p{N}])`,
   "giu"
 );
 
