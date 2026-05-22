@@ -19,7 +19,7 @@ export const PROCLITICS = [
   "I",
 ];
 
-export const UNIT_LIST = [
+export const UNITS_EN = [
   "km",
   "m",
   "cm",

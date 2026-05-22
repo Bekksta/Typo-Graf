@@ -5,11 +5,11 @@
 // - NBSP перед единицами / валютой (zł, %, €, $)
 // - Десятичная запятая (3,14) не трогается.
 import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
-import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex({
-  units: [...(NUM_UNIT.eu.units ?? []), "zł", "gr"],
-  currencies: [...(NUM_UNIT.eu.currencies ?? []), "zł"],
+  units: [...(UNITS_BY_LANG.eu.units ?? []), "zł", "gr"],
+  currencies: [...(UNITS_BY_LANG.eu.currencies ?? []), "zł"],
 });
 
 // Однобуквенные предлоги и союзы, после которых ставится NBSP.

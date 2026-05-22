@@ -5,9 +5,9 @@
 // - Десятичную запятую НЕ трогаем
 // - Диапазоны 10–12 kg (en dash) — уже сделано в common
 import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
-import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
 
-const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
+const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 const ASCII_QUOTE_NORMALIZE_RE = /[”‟]/g; // экзотические закрывающие → ASCII "
 
 function placeGermanQuotes(text: string): string {

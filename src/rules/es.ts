@@ -3,9 +3,9 @@
 // - Число + единица/валюта/% → NBSP
 // - ¿ ¡ оставляем, пробелы вокруг :;!? искусственно НЕ добавляем
 import { NBSP, ANY_SPACE_SRC, LEFT_DQUOTE, RIGHT_DQUOTE } from "../lang/maps";
-import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
 
-const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
+const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 const ASCII_QUOTE_NORMALIZE_RE = /[„‟]/g;
 
 function placeSpanishQuotes(text: string): string {

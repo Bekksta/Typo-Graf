@@ -4,9 +4,9 @@
 // - Число + единица/валюта/% → узкий NBSP
 // - Кавычки «…»
 import { NBSP, NNBSP, ANY_SPACE_SRC } from "../lang/maps";
-import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
 
-const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
+const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 
 // \b в JS не понимает границ Unicode-слов даже с флагом 'u' — используем
 // явный lookbehind по non-letter/non-digit.

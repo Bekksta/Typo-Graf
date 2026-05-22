@@ -31,7 +31,7 @@ const SI_UNITS = [
   "dB", "lm", "lx",
 ];
 
-export const NUM_UNIT = {
+export const UNITS_BY_LANG = {
   ru: {
     units: [
       "мм", "см", "м", "км",

@@ -5,9 +5,9 @@
 // - Сокращения с точкой (Sig., Sig.ra, Sigg., Dott., Dott.ssa, Egr.) → NBSP после
 // - Число + единица/валюта/% → NBSP
 import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
-import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
 
-const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
+const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 
 // Короткие предлоги/союзы/артикли. ё-стиль (как ru): NBSP после.
 const PROCLITICS = [
@@ -26,9 +26,9 @@ const PROCLITICS_RE = new RegExp(
   "giu"
 );
 
-const DOT_ABBR = ["Sig", "Sigg", "Sig\\.ra", "Sig\\.na", "Dott", "Dott\\.ssa", "Egr", "Prof", "Avv", "Arch", "Ing", "Geom"];
-const DOT_ABBR_RE = new RegExp(
-  `\\b(${DOT_ABBR.join("|")})\\.${ANY_SPACE_SRC}+(?=[A-ZÀÁÈÉÌÍÒÓÙÚ])`,
+const DOT_ABBRS = ["Sig", "Sigg", "Sig\\.ra", "Sig\\.na", "Dott", "Dott\\.ssa", "Egr", "Prof", "Avv", "Arch", "Ing", "Geom"];
+const DOT_ABBRS_RE = new RegExp(
+  `\\b(${DOT_ABBRS.join("|")})\\.${ANY_SPACE_SRC}+(?=[A-ZÀÁÈÉÌÍÒÓÙÚ])`,
   "g"
 );
 
@@ -63,7 +63,7 @@ export function applyItalianRules(input: string): string {
   let t = input;
   t = placeItalianQuotes(t);
   t = t.replace(PROCLITICS_RE, (_m, w: string) => w + NBSP);
-  t = t.replace(DOT_ABBR_RE, (_m, abbr: string) => abbr + "." + NBSP);
+  t = t.replace(DOT_ABBRS_RE, (_m, abbr: string) => abbr + "." + NBSP);
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });

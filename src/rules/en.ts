@@ -11,10 +11,10 @@ import {
   LEFT_SQUOTE,
   RIGHT_SQUOTE,
 } from "../lang/maps";
-import { PROCLITICS, UNIT_LIST } from "../lib/enLib";
+import { PROCLITICS, UNITS_EN } from "../lib/enLib";
 
 // ===== 1) Праймы: 12'' / 12" → 12″ ; 12' → 12′ =====
-const DBL_PRIME_RE = new RegExp(
+const DOUBLE_PRIME_RE = new RegExp(
   `(\\d)${ANY_SPACE_SRC}*(?:''|["”]|\\u2033)`,
   "g"
 );
@@ -24,7 +24,7 @@ const SINGLE_PRIME_RE = new RegExp(
 );
 
 function normalizePrimes(text: string): string {
-  return text.replace(DBL_PRIME_RE, `$1${DOUBLE_PRIME}`).replace(SINGLE_PRIME_RE, `$1${PRIME}`);
+  return text.replace(DOUBLE_PRIME_RE, `$1${DOUBLE_PRIME}`).replace(SINGLE_PRIME_RE, `$1${PRIME}`);
 }
 
 // ===== 2) Smart quotes + nested quotes =====
@@ -98,7 +98,7 @@ function normalizeEmDashEn(text: string): string {
 }
 
 // ===== 4) number + unit/percent (NBSP); валюты =====
-const UNITS = UNIT_LIST.map((u) =>
+const UNITS = UNITS_EN.map((u) =>
   u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 ).join("|");
 

@@ -13,7 +13,7 @@ const HAS_SR_CY = /[ђћјљњ]/i;
 // по характерным, но общим с другими языками диакритикам.
 
 // 100%-уникальные маркеры. Порядок не важен — каждый язык обособлен.
-const UNIQUE: Array<{ lang: Language; re: RegExp }> = [
+const UNIQUE_MARKER_RULES: Array<{ lang: Language; re: RegExp }> = [
   { lang: "de", re: /[äöüß]/i },     // ä ö ü ß — однозначно немецкие
   { lang: "es", re: /[ñ¿¡]/i },      // ñ ¿ ¡ — однозначно испанские
   { lang: "it", re: /[òì]/i },        // ò ì (грав на o/i) — итальянские
@@ -25,7 +25,7 @@ const UNIQUE: Array<{ lang: Language; re: RegExp }> = [
 
 // Soft-маркеры: общие диакритики, по которым скорим на ничье/неуверенности.
 // Вес: каждое совпадение даёт +1 балл.
-const SOFT_CHARS: Array<{ lang: Language; re: RegExp }> = [
+const SOFT_CHAR_RULES: Array<{ lang: Language; re: RegExp }> = [
   { lang: "es", re: /[áíóúü]/gi },
   { lang: "fr", re: /[àâèéêëîïôùû]/gi },
   { lang: "it", re: /[àèìòù]/gi },
@@ -37,7 +37,7 @@ const SOFT_CHARS: Array<{ lang: Language; re: RegExp }> = [
 // bello», где нет уникальных диакритик: одного характерного слова достаточно,
 // чтобы перевесить общие гласные с акцентами.
 // Вес: каждое совпадение даёт +5 баллов (слово сильнее одного диакритика).
-const SOFT_WORDS: Array<{ lang: Language; re: RegExp }> = [
+const SOFT_WORD_RULES: Array<{ lang: Language; re: RegExp }> = [
   { lang: "de", re: /(?<![\p{L}\p{N}])(der|die|das|und|nicht|ich|sein|wird|durch|zwischen|über|für|mit|eine|einen|sie|auch|aber|nach|sind|haben|werden)(?![\p{L}\p{N}])/giu },
   { lang: "es", re: /(?<![\p{L}\p{N}])(el|los|las|una|también|español|hacer|para|por|con|pero|esto|esta|está|este|son|del|muy|qué|cómo|dónde|cuándo|aquí|allá|después|señor)(?![\p{L}\p{N}])/giu },
   { lang: "fr", re: /(?<![\p{L}\p{N}])(le|la|les|dans|pour|sans|avec|vous|peut|leur|leurs|être|faire|c'est|qu'on|qui|nous|une|sont|sont)(?![\p{L}\p{N}])/giu },
@@ -59,7 +59,7 @@ function countScripts(text: string): { cyr: number; lat: number } {
 }
 
 function detectByUnique(text: string): Language | null {
-  for (const { lang, re } of UNIQUE) {
+  for (const { lang, re } of UNIQUE_MARKER_RULES) {
     if (re.test(text)) return lang;
   }
   return null;
@@ -74,11 +74,11 @@ const PRIORITY: Language[] = ["en", "es", "pt", "fr", "de", "it", "pl", "nl"];
 
 function detectBySoftScore(text: string): Language | null {
   const scores = new Map<Language, number>();
-  for (const { lang, re } of SOFT_CHARS) {
+  for (const { lang, re } of SOFT_CHAR_RULES) {
     const m = text.match(re);
     if (m) scores.set(lang, (scores.get(lang) ?? 0) + m.length);
   }
-  for (const { lang, re } of SOFT_WORDS) {
+  for (const { lang, re } of SOFT_WORD_RULES) {
     const m = text.match(re);
     if (m) scores.set(lang, (scores.get(lang) ?? 0) + m.length * 5);
   }

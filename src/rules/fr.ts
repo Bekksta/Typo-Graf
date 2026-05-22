@@ -3,9 +3,9 @@
 // - Гийеметы « … » с узкими NBSP внутри
 // - Число + единица/валюта/% → узкий NBSP
 import { NNBSP, NBSP, ANY_SPACE_SRC, EM_DASH } from "../lang/maps";
-import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
 
-const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
+const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 
 // Перед ;:?! ставим NNBSP. Не трогаем `:` внутри URL/email — они замаскированы.
 const PUNCT_BEFORE_RE = new RegExp(`${ANY_SPACE_SRC}*([;:!?»])`, "g");

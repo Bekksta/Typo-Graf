@@ -1,7 +1,7 @@
 import {
-  HYPHEN_ABBR,
-  DOT_UNIT_ABBR,
-  DOT_GENERIC_ABBR,
+  HYPHEN_ABBRS,
+  DOT_UNIT_ABBRS,
+  DOT_GENERIC_ABBRS,
   PROCLITICS,
   COMPOSITE_ABBR_RULES,
   QUANTIFIER_NOUNS,
@@ -94,7 +94,7 @@ export function nbspAfterAbbr(text: string): string {
   // как аббревиатура. Это же закрывает кейс «гг.» автоматически: при
   // попытке сматчить второй `г.` слева стоит `г` (буква) — не подходит.
   const reAbbrDot = new RegExp(
-    `(?<![\\p{L}\\p{N}])(?:(${DOT_UNIT_ABBR.join("|")})|(${DOT_GENERIC_ABBR.join(
+    `(?<![\\p{L}\\p{N}])(?:(${DOT_UNIT_ABBRS.join("|")})|(${DOT_GENERIC_ABBRS.join(
       "|"
     )}))\\.(?:${ANY_SPACE_SRC}+)(?=\\S)`,
     "giu"
@@ -167,7 +167,7 @@ function escRe(s: string) {
 export function fixHyphenatedAbbr(text: string): string {
   let out = text;
   const H = "[\\-\\u2013\\u2014\\u2011]";
-  for (const raw of HYPHEN_ABBR) {
+  for (const raw of HYPHEN_ABBRS) {
     const parts = raw.split("-");
     const pattern = parts.map(escRe).join(H);
     const re = new RegExp(

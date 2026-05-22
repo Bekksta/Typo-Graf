@@ -5,11 +5,11 @@
 // - ¿/¡ не используются; искусственных пробелов вокруг :;!? не добавляем
 // - Десятичная запятая 3,14 не трогается
 import { NBSP, ANY_SPACE_SRC, LEFT_DQUOTE, RIGHT_DQUOTE } from "../lang/maps";
-import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex({
-  units: [...(NUM_UNIT.eu.units ?? [])],
-  currencies: ["R\\$", "\\$", "€", ...(NUM_UNIT.eu.currencies ?? [])],
+  units: [...(UNITS_BY_LANG.eu.units ?? [])],
+  currencies: ["R\\$", "\\$", "€", ...(UNITS_BY_LANG.eu.currencies ?? [])],
 });
 
 const ASCII_QUOTE_NORMALIZE_RE = /[„‟]/g;

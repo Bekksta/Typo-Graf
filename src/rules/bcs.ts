@@ -3,9 +3,9 @@
 //   (если есть «…» — оставляем; если „…" — оставляем; иначе по умолчанию „…")
 // - Число + единица/валюта/% → NBSP
 import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
-import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
 
-const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
+const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 
 function placeBCSQuotes(text: string): string {
   if (/[«»]/.test(text)) return text;

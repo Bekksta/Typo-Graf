@@ -5,9 +5,9 @@
 // - В нидерландской типографике короткие предлоги/артикли (de, het, een,
 //   van, op, te, in, met) НЕ требуют NBSP — оставляем обычные пробелы.
 import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
-import { makeNumberUnitRegex, NUM_UNIT } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
 
-const UNIT_RE = makeNumberUnitRegex(NUM_UNIT.eu);
+const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 
 const ASCII_QUOTE_NORMALIZE_RE = /[“‟]/g;
 

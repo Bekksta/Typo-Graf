@@ -42,7 +42,7 @@ type MessageKey =
   // К нему добавляется процент: «Тупографим… 47%».
   | "loadingNotice";
 
-const T: Record<UILocale, Record<MessageKey, string>> = {
+const MESSAGES_BY_LOCALE: Record<UILocale, Record<MessageKey, string>> = {
   ru: {
     doneStat: "Готово.",
     cancelledStat: "Отменено.",
@@ -188,7 +188,7 @@ const T: Record<UILocale, Record<MessageKey, string>> = {
   },
 };
 
-const LANG_NAMES: Record<UILocale, Record<Language, string>> = {
+const LANG_NAMES_BY_LOCALE: Record<UILocale, Record<Language, string>> = {
   ru: {
     ru: "русский",
     en: "английский",
@@ -350,7 +350,7 @@ export function t(
   key: MessageKey,
   params?: Record<string, string | number>
 ): string {
-  let msg = T[locale]?.[key] ?? T.en[key];
+  let msg = MESSAGES_BY_LOCALE[locale]?.[key] ?? MESSAGES_BY_LOCALE.en[key];
   if (params) {
     for (const k of Object.keys(params)) {
       msg = msg.replace(`{${k}}`, String(params[k]));
@@ -360,5 +360,5 @@ export function t(
 }
 
 export function langName(uiLocale: UILocale, lang: Language): string {
-  return LANG_NAMES[uiLocale]?.[lang] ?? LANG_NAMES.en[lang] ?? lang;
+  return LANG_NAMES_BY_LOCALE[uiLocale]?.[lang] ?? LANG_NAMES_BY_LOCALE.en[lang] ?? lang;
 }
