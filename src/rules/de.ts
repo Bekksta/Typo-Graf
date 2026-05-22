@@ -33,7 +33,7 @@ function placeGermanQuotes(text: string): string {
 // d. h. (das heißt), u. ä. (und ähnliche), bzw. (beziehungsweise), etc.
 // Внутри двухбуквенных вариантов — NBSP, чтобы пара не разорвалась.
 // После всего сокращения перед словом — NBSP.
-function tightenGermanAbbrs(text: string): string {
+function glueGermanAbbrs(text: string): string {
   // z.B. / z. B. → z.NBSPB.
   const pairs: Array<[RegExp, string]> = [
     [/\bz\.\s*B\./g, `z.${NBSP}B.`],
@@ -66,7 +66,7 @@ function groupThousandsDe(text: string): string {
 export function applyGermanRules(input: string): string {
   let t = input;
   t = placeGermanQuotes(t);
-  t = tightenGermanAbbrs(t);
+  t = glueGermanAbbrs(t);
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });

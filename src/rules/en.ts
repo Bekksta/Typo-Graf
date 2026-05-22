@@ -120,7 +120,7 @@ const TRAILING_CURRENCY_RE = new RegExp(
   "g"
 );
 
-function formatLeadingCurrency(text: string): string {
+function normalizeLeadingCurrency(text: string): string {
   return text.replace(LEADING_CURRENCY_RE, (_m, sym: string, num: string, dec: string | undefined) => {
     const rawDigits = num.replace(/[ .,]/g, "");
     const withThousands = rawDigits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -129,9 +129,9 @@ function formatLeadingCurrency(text: string): string {
   });
 }
 
-function tightenUnitsAndPercentsEn(text: string): string {
+function glueUnitsAndPercentsEn(text: string): string {
   let t = text;
-  t = formatLeadingCurrency(t);
+  t = normalizeLeadingCurrency(t);
   t = t.replace(US_THOUSANDS_RE, "$1,$2");
   t = t.replace(PERCENT_RE, (_m, n) => `${n}${NBSP}%`);
   t = t.replace(UNIT_RE, (_m, n, u) => `${n}${NBSP}${u}`);
@@ -147,7 +147,7 @@ function normalizeRangesEn(text: string): string {
 
 // Группировка тысяч (5+ цифр) запятой-разделителем — англоязычная норма.
 // Применяется к произвольным числам, не только к валютным префиксам
-// (formatLeadingCurrency уже отрабатывает $1234 → $1,234).
+// (normalizeLeadingCurrency уже отрабатывает $1234 → $1,234).
 function groupThousandsEn(text: string): string {
   return text.replace(/\b\d{5,}\b/g, (n) =>
     n.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -176,14 +176,14 @@ function glueProclitics(text: string): string {
 // + NBSP перед фамилией. Не трогаем в конце предложения (где после '.' нет
 // заглавного имени, а идёт пробел и обычное слово/конец).
 const HONORIFICS_RE = /\b(Dr|Mr|Mrs|Ms|Prof|St|Sr|Jr|Rev|Capt|Lt|Col|Gen)\.\s+(?=[A-Z])/g;
-function tightenHonorifics(text: string): string {
+function glueHonorifics(text: string): string {
   return text.replace(HONORIFICS_RE, `$1.${NBSP}`);
 }
 
 // Латинские сокращения e.g. / i.e. / etc. / vs. / cf.
 // Внутри e.g. и i.e. ставим NBSP (по строгой типографике), и NBSP после
 // всего сокращения перед следующим словом.
-function tightenLatinAbbrs(text: string): string {
+function glueLatinAbbrs(text: string): string {
   // 1) e.g. → e.NBSPg.   (требуем точки на ОБЕИХ позициях, чтобы случайно
   // не подцепить "egg", "ego" и т.п.)
   text = text.replace(/\be\.\s*g\.(?=\s|,|;|:|\)|$)/g, `e.${NBSP}g.`);
@@ -203,10 +203,10 @@ export function applyEnglishRules(input: string): string {
   // em dash должен идти ДО ranges: -- содержит -, ranges работает только с цифрами
   t = normalizeEmDashEn(t);
   t = normalizeRangesEn(t);
-  t = tightenUnitsAndPercentsEn(t);
+  t = glueUnitsAndPercentsEn(t);
   t = groupThousandsEn(t);
-  t = tightenLatinAbbrs(t);
-  t = tightenHonorifics(t);
+  t = glueLatinAbbrs(t);
+  t = glueHonorifics(t);
   t = glueProclitics(t);
   return t;
 }

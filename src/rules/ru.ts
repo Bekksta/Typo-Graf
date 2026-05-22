@@ -24,7 +24,7 @@ function glueProclitics(text: string): string {
 }
 
 // 5.2 Инициалы
-function fixInitials(text: string): string {
+function glueInitials(text: string): string {
   text = text.replace(
     /([А-ЯЁ])\.(?:[ \u00A0\u2009\u202F\t]+)([А-ЯЁ])\.(?:[ \u00A0\u2009\u202F\t]+)([А-ЯЁ][а-яё]+)/g,
     (_m, a, b, last) => `${a}.` + NBSP + `${b}.` + NBSP + `${last}`
@@ -65,7 +65,7 @@ function smartQuotesRu(text: string): string {
 }
 
 // 5.4 NBSP после аббревиатур с точкой, с разделением единиц/служебных
-function nbspAfterAbbr(text: string): string {
+function glueAfterAbbr(text: string): string {
   let out = text;
 
   // №, § → NBSP перед числом
@@ -164,7 +164,7 @@ function nbspAfterAbbr(text: string): string {
 function escRe(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-function fixHyphenatedAbbr(text: string): string {
+function glueHyphenatedAbbr(text: string): string {
   let out = text;
   const H = "[\\-\\u2013\\u2014\\u2011]";
   for (const raw of HYPHEN_ABBRS) {
@@ -224,7 +224,7 @@ function normalizeEmDash(text: string): string {
   );
   // унификация уже стоящего em dash: NBSP слева, обычный пробел справа.
   // ИСКЛЮЧЕНИЯ: цифры с обеих сторон (диапазон вида 1991—1995) и WORD_JOINER-
-  // обёртка (U+2060) — её ставит `convertDateRanges` для дата-диапазонов,
+  // обёртка (U+2060) — её ставит `normalizeDateRanges` для дата-диапазонов,
   // чтобы запретить перенос; повторно её трогать нельзя.
   out = out.replace(
     /(\S)[ \u00A0\u2009\u202F\t]*—[ \u00A0\u2009\u202F\t]*(\S)/g,
@@ -256,7 +256,7 @@ const MONTH_RANGE_RE = new RegExp(
 // числовых/месячных диапазонах, иначе Figma по правилам UAX#14 рвёт строку
 // прямо по em-dash: `1799—|1837` уезжает на новую строку, и `гг.` остаётся
 // один. WORD_JOINER запрещает перенос — диапазон становится неразрывным целиком.
-function convertDateRanges(text: string): string {
+function normalizeDateRanges(text: string): string {
   text = text.replace(YEAR_RANGE_RE, `$1${WORD_JOINER}${EM_DASH}${WORD_JOINER}$2`);
   text = text.replace(MONTH_RANGE_RE, (_m, a: string, b: string) =>
     `${a}${WORD_JOINER}${EM_DASH}${WORD_JOINER}${b}`
@@ -272,7 +272,7 @@ const NEG_NUM_RE = new RegExp(
   `(?<![\\d\\p{L}])-(\\d+(?:[.,]\\d+)?)(?=[ \\u00A0\\u2009\\u202F\\t]*(?:%|₽|€|\\$|°|кг|г|см|мм|м|л|км|мл|т|МБ|ГБ|ТБ|Гц|кГц|МГц|Вт|кВт|В|А|Ом))`,
   "gu"
 );
-function convertNegativeMinus(text: string): string {
+function normalizeNegativeMinus(text: string): string {
   return text.replace(NEG_NUM_RE, "−$1");
 }
 
@@ -333,18 +333,18 @@ export function applyRussianRules(
   let text = input;
 
   // Порядок важен!
-  text = fixInitials(text); // 5.2
+  text = glueInitials(text); // 5.2
   text = glueProclitics(text); // 5.1
   text = normalizeCompositeAbbr(text); // 5.6 (до кавычек/тире)
-  text = nbspAfterAbbr(text); // 5.4
+  text = glueAfterAbbr(text); // 5.4
   text = smartQuotesRu(text); // 5.3
   text = normalizeEmDash(text); // 5.8 (без автозамены дефиса на —)
-  text = convertDateRanges(text); // 5.10 — годы и месяцы получают em-dash
-  text = fixHyphenatedAbbr(text); // 5.5
+  text = normalizeDateRanges(text); // 5.10 — годы и месяцы получают em-dash
+  text = glueHyphenatedAbbr(text); // 5.5
   text = glueParticles(text); // 5.7
   text = removeSpacesBeforePunctuation(text); // 5.9
   if (yoFix) text = applyYoFix(text); // ёфикация по белому списку
-  text = convertNegativeMinus(text); // 5.11
+  text = normalizeNegativeMinus(text); // 5.11
   text = normalizeAndOr(text); // 5.12 — «и/или» без пробелов
   text = glueNumQuantifiers(text); // число + валюта/время/месяц → NBSP
   text = groupThousandsRu(text);

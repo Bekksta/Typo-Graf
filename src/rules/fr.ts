@@ -39,14 +39,14 @@ function placeGuillemets(text: string): string {
 const OPEN_GUILLEMET_SPACE_RE = new RegExp(`«${ANY_SPACE_SRC}*`, "g");
 const CLOSE_GUILLEMET_SPACE_RE = new RegExp(`${ANY_SPACE_SRC}*»`, "g");
 
-function tightenGuillemets(text: string): string {
+function glueGuillemets(text: string): string {
   return text
     .replace(OPEN_GUILLEMET_SPACE_RE, "«" + NNBSP)
     .replace(CLOSE_GUILLEMET_SPACE_RE, NNBSP + "»");
 }
 
 // 3) Number + unit/currency/% — узкий NBSP
-function tightenUnitsFr(text: string): string {
+function glueUnitsFr(text: string): string {
   return text.replace(UNIT_RE, (m, n: string, _u: string) => {
     const unitStart = n.length;
     return n + NNBSP + m.slice(unitStart).replace(/^\s+/, "");
@@ -54,7 +54,7 @@ function tightenUnitsFr(text: string): string {
 }
 
 // 4) Перед ;:?!» — узкий NBSP, но НЕ внутри URL/email и не если уже NNBSP
-function narrowNbspBeforePunct(text: string): string {
+function glueNnbspBeforePunct(text: string): string {
   return text.replace(PUNCT_BEFORE_RE, (_m, p: string) => NNBSP + p);
 }
 
@@ -90,10 +90,10 @@ export function applyFrenchRules(input: string): string {
   let t = input;
   t = smartApostropheFr(t);
   t = placeGuillemets(t);
-  t = tightenGuillemets(t);
+  t = glueGuillemets(t);
   t = normalizeEmDashFr(t);
-  t = narrowNbspBeforePunct(t);
-  t = tightenUnitsFr(t);
+  t = glueNnbspBeforePunct(t);
+  t = glueUnitsFr(t);
   // обычный NBSP в общих правилах уже мог сработать — заменим на NNBSP для FR
   t = t.replace(new RegExp(`(\\d)${NBSP}`, "g"), `$1${NNBSP}`);
   t = groupThousandsFr(t);
