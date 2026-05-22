@@ -8,19 +8,20 @@ import {
 } from "../lib/ruLib";
 import { NBSP, NBH, ANY_SPACE_CLASS, ANY_SPACE_SRC, EM_DASH, WORD_JOINER } from "../lang/maps";
 import { preserveCase } from "../lib/commonCase";
+import { escapeRegex } from "../utils/regexUtils";
 import { applyYoFix } from "./yoPairs";
 
 // 5.1 Проклитики (короткие предлоги/союзы/forward-частицы) → NBSP справа.
 // Парная функция — `glueParticles` ниже (энклитики `бы/ли/же/ль`, NBSP слева).
 // Пересечение списков запрещено: слово либо тянет вправо, либо влево.
+const PROCLITICS_RE = new RegExp(
+  `(^|[\\s(>])(${PROCLITICS.join(
+    "|"
+  )})(?:${ANY_SPACE_SRC})(?=[A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\xAB])`,
+  "gmi"
+);
 function glueProclitics(text: string): string {
-  const re = new RegExp(
-    `(^|[\\s(>])(${PROCLITICS.join(
-      "|"
-    )})(?:${ANY_SPACE_SRC})(?=[A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\xAB])`,
-    "gmi"
-  );
-  return text.replace(re, (_m, pre, w) => pre + w + NBSP);
+  return text.replace(PROCLITICS_RE, (_m, pre, w) => pre + w + NBSP);
 }
 
 // 5.2 Инициалы
@@ -64,7 +65,16 @@ function smartQuotesRu(text: string): string {
   return out;
 }
 
-// 5.4 NBSP после аббревиатур с точкой, с разделением единиц/служебных
+// 5.4 NBSP после аббревиатур с точкой, с разделением единиц/служебных.
+// DOTTED_ABBR_RE — основной паттерн внутри функции: словарь единиц
+// (DOT_UNIT_ABBRS) и общих сокращений (DOT_GENERIC_ABBRS), затем точка и
+// пробел перед следующим словом.
+const DOTTED_ABBR_RE = new RegExp(
+  `(?<![\\p{L}\\p{N}])(?:(${DOT_UNIT_ABBRS.join("|")})|(${DOT_GENERIC_ABBRS.join(
+    "|"
+  )}))\\.(?:${ANY_SPACE_SRC}+)(?=\\S)`,
+  "giu"
+);
 function glueAfterAbbr(text: string): string {
   let out = text;
 
@@ -93,14 +103,8 @@ function glueAfterAbbr(text: string): string {
   // отдельно — иначе хвост любого слова на `-те.`/`-г.`/`-п.` ловился бы
   // как аббревиатура. Это же закрывает кейс «гг.» автоматически: при
   // попытке сматчить второй `г.` слева стоит `г` (буква) — не подходит.
-  const reAbbrDot = new RegExp(
-    `(?<![\\p{L}\\p{N}])(?:(${DOT_UNIT_ABBRS.join("|")})|(${DOT_GENERIC_ABBRS.join(
-      "|"
-    )}))\\.(?:${ANY_SPACE_SRC}+)(?=\\S)`,
-    "giu"
-  );
   out = out.replace(
-    reAbbrDot,
+    DOTTED_ABBR_RE,
     (
       m: string,
       unit: string | undefined,
@@ -161,15 +165,12 @@ function glueAfterAbbr(text: string): string {
 }
 
 // 5.5 Составные дефисные аббревиатуры (г-н, т-ща...) с NBH и NBSP по месту
-function escRe(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 function glueHyphenatedAbbr(text: string): string {
   let out = text;
   const H = "[\\-\\u2013\\u2014\\u2011]";
   for (const raw of HYPHEN_ABBRS) {
     const parts = raw.split("-");
-    const pattern = parts.map(escRe).join(H);
+    const pattern = parts.map(escapeRegex).join(H);
     const re = new RegExp(
       `${pattern}(?![A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u0451])(?:${ANY_SPACE_SRC}+)?(?=\\S)`,
       "gi"
@@ -204,11 +205,10 @@ function normalizeCompositeAbbr(text: string): string {
 // Парная функция — `glueProclitics` выше (forward-clitic, NBSP справа).
 // Список замкнутый: эти 4 частицы по Лебедеву §32 тянутся к слову СЛЕВА,
 // поэтому жить им можно только здесь и нигде больше.
+const ENCLITIC_PARTICLES_RE =
+  /([А-ЯЁа-яёA-Za-z]{2,})[ \u00A0\u2009\u202F\t]+(бы|ли|же|ль)(?=[^А-Яа-яЁёA-Za-z]|$)/gi;
 function glueParticles(text: string): string {
-  return text.replace(
-    /([А-ЯЁа-яёA-Za-z]{2,})[ \u00A0\u2009\u202F\t]+(бы|ли|же|ль)(?=[^А-Яа-яЁёA-Za-z]|$)/gi,
-    (_m, w, p) => w + NBSP + p
-  );
+  return text.replace(ENCLITIC_PARTICLES_RE, (_m, w, p) => w + NBSP + p);
 }
 
 // 5.8 Тире/эм-даш: только нормализация явных кейсов, БЕЗ замены дефиса на тире
@@ -301,13 +301,12 @@ function groupThousandsRu(text: string): string {
 // клеятся; «243 голубя», «100 коробок» — нет, чтобы не лепить произвольно.
 // Число может быть с уже расставленными NBSP-разделителями тысяч
 // («1 234 567 рублей»), поэтому слева числа допускаем NBSP.
+const NUM_QUANTIFIERS_RE = new RegExp(
+  `(\\d)[ \\t]+(${[...QUANTIFIER_NOUNS, ...MONTHS_RU].join("|")})(?![\\p{L}\\p{N}])`,
+  "giu"
+);
 function glueNumQuantifiers(text: string): string {
-  const words = [...QUANTIFIER_NOUNS, ...MONTHS_RU].join("|");
-  const re = new RegExp(
-    `(\\d)[ \\t]+(${words})(?![\\p{L}\\p{N}])`,
-    "giu"
-  );
-  return text.replace(re, (_m, d: string, w: string) => `${d}${NBSP}${w}`);
+  return text.replace(NUM_QUANTIFIERS_RE, (_m, d: string, w: string) => `${d}${NBSP}${w}`);
 }
 
 // 5.9 Пробелы перед знаками препинания.

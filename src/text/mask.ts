@@ -3,6 +3,7 @@
 // не путал две маски с одинаковой длиной/символом.
 // @ts-ignore esbuild/vite text-loader
 import brandsRaw from "../dict/brands.txt";
+import { escapeRegex } from "../utils/regexUtils";
 
 export type Mask = { start: number; end: number; placeholder: string; value: string };
 
@@ -23,9 +24,7 @@ const BRANDS = (brandsRaw as string)
 
 const BRAND_RE = BRANDS.length
   ? new RegExp(
-      `(?<![\\p{L}\\p{N}])(?:${BRANDS.map((b) =>
-        b.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-      ).join("|")})(?![\\p{L}\\p{N}])`,
+      `(?<![\\p{L}\\p{N}])(?:${BRANDS.map(escapeRegex).join("|")})(?![\\p{L}\\p{N}])`,
       "gu"
     )
   : null;

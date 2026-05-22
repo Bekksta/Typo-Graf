@@ -12,6 +12,7 @@ import {
   RIGHT_SQUOTE,
 } from "../lang/maps";
 import { PROCLITICS, UNITS_EN } from "../lib/enLib";
+import { escapeRegex } from "../utils/regexUtils";
 
 // ===== 1) Праймы: 12'' / 12" → 12″ ; 12' → 12′ =====
 const DOUBLE_PRIME_RE = new RegExp(
@@ -98,9 +99,7 @@ function normalizeEmDashEn(text: string): string {
 }
 
 // ===== 4) number + unit/percent (NBSP); валюты =====
-const UNITS = UNITS_EN.map((u) =>
-  u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-).join("|");
+const UNITS = UNITS_EN.map(escapeRegex).join("|");
 
 const PERCENT_RE = new RegExp(`(\\d+)${ANY_SPACE_SRC}*%`, "g");
 const UNIT_RE = new RegExp(
@@ -160,9 +159,7 @@ function groupThousandsEn(text: string): string {
 //     требует подтверждения у владельца продукта.
 const PROCLITICS_RE = PROCLITICS.length
   ? new RegExp(
-      `\\b(${PROCLITICS.map((w) =>
-        w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-      ).join("|")})${ANY_SPACE_SRC}+(?=\\S)`,
+      `\\b(${PROCLITICS.map(escapeRegex).join("|")})${ANY_SPACE_SRC}+(?=\\S)`,
       "gi"
     )
   : null;
