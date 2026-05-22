@@ -13,7 +13,7 @@ import { applyYoFix } from "./yoPairs";
 // 5.1 Проклитики (короткие предлоги/союзы/forward-частицы) → NBSP справа.
 // Парная функция — `glueParticles` ниже (энклитики `бы/ли/же/ль`, NBSP слева).
 // Пересечение списков запрещено: слово либо тянет вправо, либо влево.
-export function glueProclitics(text: string): string {
+function glueProclitics(text: string): string {
   const re = new RegExp(
     `(^|[\\s(>])(${PROCLITICS.join(
       "|"
@@ -24,7 +24,7 @@ export function glueProclitics(text: string): string {
 }
 
 // 5.2 Инициалы
-export function fixInitials(text: string): string {
+function fixInitials(text: string): string {
   text = text.replace(
     /([А-ЯЁ])\.(?:[ \u00A0\u2009\u202F\t]+)([А-ЯЁ])\.(?:[ \u00A0\u2009\u202F\t]+)([А-ЯЁ][а-яё]+)/g,
     (_m, a, b, last) => `${a}.` + NBSP + `${b}.` + NBSP + `${last}`
@@ -37,7 +37,7 @@ export function fixInitials(text: string): string {
 }
 
 // 5.3 Умные кавычки «» (без вмешательства в уже расставленные праймы ′″)
-export function smartQuotesRu(text: string): string {
+function smartQuotesRu(text: string): string {
   // нормализуем экзотические кавычки к "
   text = text.replace(/[“”„‟«»]/g, '"').replace(/'{2}/g, '"');
 
@@ -65,7 +65,7 @@ export function smartQuotesRu(text: string): string {
 }
 
 // 5.4 NBSP после аббревиатур с точкой, с разделением единиц/служебных
-export function nbspAfterAbbr(text: string): string {
+function nbspAfterAbbr(text: string): string {
   let out = text;
 
   // №, § → NBSP перед числом
@@ -164,7 +164,7 @@ export function nbspAfterAbbr(text: string): string {
 function escRe(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-export function fixHyphenatedAbbr(text: string): string {
+function fixHyphenatedAbbr(text: string): string {
   let out = text;
   const H = "[\\-\\u2013\\u2014\\u2011]";
   for (const raw of HYPHEN_ABBRS) {
@@ -192,7 +192,7 @@ export function fixHyphenatedAbbr(text: string): string {
 }
 
 // 5.6 Составные сокращения: нормализация «тд/т.д/т д» → «т. д.», «до нэ» → «до н. э.» и т.п.
-export function normalizeCompositeAbbr(text: string): string {
+function normalizeCompositeAbbr(text: string): string {
   let out = text;
   for (const { re, canon } of COMPOSITE_ABBR_RULES) {
     out = out.replace(re, (m: string, pre: string) => (pre ?? "") + preserveCase(canon, m, "first", "ru"));
@@ -204,7 +204,7 @@ export function normalizeCompositeAbbr(text: string): string {
 // Парная функция — `glueProclitics` выше (forward-clitic, NBSP справа).
 // Список замкнутый: эти 4 частицы по Лебедеву §32 тянутся к слову СЛЕВА,
 // поэтому жить им можно только здесь и нигде больше.
-export function glueParticles(text: string): string {
+function glueParticles(text: string): string {
   return text.replace(
     /([А-ЯЁа-яёA-Za-z]{2,})[ \u00A0\u2009\u202F\t]+(бы|ли|же|ль)(?=[^А-Яа-яЁёA-Za-z]|$)/gi,
     (_m, w, p) => w + NBSP + p
@@ -212,7 +212,7 @@ export function glueParticles(text: string): string {
 }
 
 // 5.8 Тире/эм-даш: только нормализация явных кейсов, БЕЗ замены дефиса на тире
-export function normalizeEmDash(text: string): string {
+function normalizeEmDash(text: string): string {
   
   let out = text;
   // двойной дефис → em dash
@@ -256,7 +256,7 @@ const MONTH_RANGE_RE = new RegExp(
 // числовых/месячных диапазонах, иначе Figma по правилам UAX#14 рвёт строку
 // прямо по em-dash: `1799—|1837` уезжает на новую строку, и `гг.` остаётся
 // один. WORD_JOINER запрещает перенос — диапазон становится неразрывным целиком.
-export function convertDateRanges(text: string): string {
+function convertDateRanges(text: string): string {
   text = text.replace(YEAR_RANGE_RE, `$1${WORD_JOINER}${EM_DASH}${WORD_JOINER}$2`);
   text = text.replace(MONTH_RANGE_RE, (_m, a: string, b: string) =>
     `${a}${WORD_JOINER}${EM_DASH}${WORD_JOINER}${b}`
@@ -272,14 +272,14 @@ const NEG_NUM_RE = new RegExp(
   `(?<![\\d\\p{L}])-(\\d+(?:[.,]\\d+)?)(?=[ \\u00A0\\u2009\\u202F\\t]*(?:%|₽|€|\\$|°|кг|г|см|мм|м|л|км|мл|т|МБ|ГБ|ТБ|Гц|кГц|МГц|Вт|кВт|В|А|Ом))`,
   "gu"
 );
-export function convertNegativeMinus(text: string): string {
+function convertNegativeMinus(text: string): string {
   return text.replace(NEG_NUM_RE, "−$1");
 }
 
 // 5.12 «и / или» (с пробелами вокруг косой черты) → «и/или» — это
 // устойчивое сочетание, всегда слитное. В начале предложения сохраняем
 // заглавную: `И / или` → `И/или`, иначе теряли бы регистр.
-export function normalizeAndOr(text: string): string {
+function normalizeAndOr(text: string): string {
   return text.replace(
     /(?<![\p{L}\p{N}])(и)\s*\/\s*или(?![\p{L}\p{N}])/giu,
     (_m, lead: string) => (lead === "И" ? "И/или" : "и/или")
@@ -289,7 +289,7 @@ export function normalizeAndOr(text: string): string {
 // Группировка тысяч в больших числах: 1234567 → 1 234 567 (NBSP-разделитель).
 // Порог — 5 цифр, чтобы не задеть года (1991), версии (1024) и пр. четырёхзначные.
 // Word-boundary защищает от ISBN/SKU-подобных штук с буквами рядом.
-export function groupThousandsRu(text: string): string {
+function groupThousandsRu(text: string): string {
   return text.replace(/\b\d{5,}\b/g, (n) =>
     n.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
   );
@@ -301,7 +301,7 @@ export function groupThousandsRu(text: string): string {
 // клеятся; «243 голубя», «100 коробок» — нет, чтобы не лепить произвольно.
 // Число может быть с уже расставленными NBSP-разделителями тысяч
 // («1 234 567 рублей»), поэтому слева числа допускаем NBSP.
-export function glueNumQuantifiers(text: string): string {
+function glueNumQuantifiers(text: string): string {
   const words = [...QUANTIFIER_NOUNS, ...MONTHS_RU].join("|");
   const re = new RegExp(
     `(\\d)[ \\t]+(${words})(?![\\p{L}\\p{N}])`,
@@ -313,7 +313,7 @@ export function glueNumQuantifiers(text: string): string {
 // 5.9 Пробелы перед знаками препинания.
 // Перед %, ‰, ₽, €, $ ПРОБЕЛ НЕ удаляем — по ТЗ там должен стоять NBSP,
 // который проставляется в common/lang-правилах; иначе он бы здесь срезался.
-export function removeSpacesBeforePunctuation(text: string): string {
+function removeSpacesBeforePunctuation(text: string): string {
   text = text.replace(new RegExp(`${ANY_SPACE_SRC}+([.,!?;:])`, "g"), "$1");
   text = text.replace(new RegExp(`${ANY_SPACE_SRC}+(\\u2026)`, "g"), "$1");
   text = text.replace(new RegExp(`${ANY_SPACE_SRC}+([)\\xBB])`, "g"), "$1");
