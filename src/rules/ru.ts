@@ -7,7 +7,7 @@ import {
   QUANTIFIER_NOUNS,
 } from "../lib/ruLib";
 import { NBSP, NBH, ANY_SPACE_CLASS, ANY_SPACE_SRC, EM_DASH, WORD_JOINER } from "../lang/maps";
-import { preserveCase } from "../lib/commonCase";
+import { preserveCase } from "../utils/caseUtils";
 import { escapeRegex } from "../utils/regexUtils";
 import { applyYoFix } from "./yoPairs";
 

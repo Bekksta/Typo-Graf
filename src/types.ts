@@ -6,11 +6,3 @@ export type Replacement = {
   text: string;
   reason?: string;
 };
-
-export type Plan = {
-  nodeId: string;
-  replacements: Replacement[];
-  lang: Language;
-  before: string;
-  after: string;
-};

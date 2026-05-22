@@ -157,15 +157,12 @@ function groupThousandsEn(text: string): string {
 // NB: в ТЗ §3.3 явно "Артикли/предлоги НЕ склеиваем NBSP".
 //     В разделе "Готовый функционал" — обратное. Оставлено по факту реализации,
 //     требует подтверждения у владельца продукта.
-const PROCLITICS_RE = PROCLITICS.length
-  ? new RegExp(
-      `\\b(${PROCLITICS.map(escapeRegex).join("|")})${ANY_SPACE_SRC}+(?=\\S)`,
-      "gi"
-    )
-  : null;
+const PROCLITICS_RE = new RegExp(
+  `\\b(${PROCLITICS.map(escapeRegex).join("|")})${ANY_SPACE_SRC}+(?=\\S)`,
+  "gi"
+);
 
 function glueProclitics(text: string): string {
-  if (!PROCLITICS_RE) return text;
   return text.replace(PROCLITICS_RE, (_m, w) => w + NBSP);
 }
 

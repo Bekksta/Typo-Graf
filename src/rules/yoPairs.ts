@@ -1,4 +1,4 @@
-import { preserveCase } from "../lib/commonCase";
+import { preserveCase } from "../utils/caseUtils";
 // eyo-safe.txt — словарь «безопасных» ёфикаций из e2yo/eyo-kernel (MIT).
 // Подтягивается esbuild'ом через --loader:.txt=text, разворачивается
 // в Map при инициализации модуля.

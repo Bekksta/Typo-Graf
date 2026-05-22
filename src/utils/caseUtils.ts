@@ -1,4 +1,6 @@
-// src/lib/commonCase.ts
+// Сохранение регистра: при замене слова `sample` на canonical-форму `canon`
+// переносим капитализацию исходника на выход.
+
 const FIRST_LETTER_RE = /\p{L}/u;
 
 export type CaseMode = "first" | "all" | "title";
