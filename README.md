@@ -74,7 +74,7 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 - **Comparisons:** `!= → ≠`, `<= → ≤`, `>= → ≥`, `= → =` (with spaces), spaces around `≈ ≃`.
 - **Signs:** `+- → ±`, `-+ → ∓`.
 - **Arrows:** `-> → →`, `<- → ←`, `--> → ⟶`, `=> → ⇒`, `<=> → ⇔`.
-- **Constants and functions:** lowercase `pi → π`, `sqrt(x) → √x`, `inf → ∞`, `\alpha → α` (and the rest of Greek), `sin(x) → sin x`, `log10(x) → log₁₀ x`, `lim(x→0) → limₓ→₀`, `vec(a) → a⃗`.
+- **Constants and functions:** lowercase `pi → π`, `sqrt(x) → √x`, `inf → ∞`, `sum → Σ`, `integral → ∫`, `\alpha → α` (and the rest of Greek), `sin(x) → sin x`, `log10(x) → log₁₀ x`, `lim(x→0) → limₓ→₀`, `vec(a) → a⃗`.
 - Uppercase `Pi` is **not** converted (could be a proper noun, e.g. "Pi calculation").
 - Em-dashes (`—`) between non-digits are preserved as typographic dashes; only ASCII `-`/`–` between alphanumerics become the math minus `−` (U+2212).
 
@@ -93,6 +93,7 @@ Works on inline expressions, doesn't touch LaTeX/MathML blocks.
 - Number + quantifier noun (currency, time, date) → NBSP: `5 рублей`, `12 января`, `300 минут`, `1991 году`. A curated list — generic countable nouns like `243 голубя` are **not** glued.
 - Unicode minus `−` (U+2212) for negative financial values: `-300 ₽` → `−300 ₽`, `-15 %` → `−15 %`. Bullet-list hyphens are left alone.
 - `и / или` → `и/или` (no spaces around the slash). Case is preserved at sentence start: `И / или …` → `И/или …`.
+- Stray space before punctuation is removed: `привет ,мир` → `привет,мир` (covers `.`, `,`, `!`, `?`, `;`, `:`, `…`, `)`). Space before `%`, `‰`, `₽`, `€`, `$` is left alone — that's where NBSP belongs, set by other rules.
 - Thousands grouping with NBSP for numbers ≥5 digits: `1234567` → `1 234 567`. Years (`1991`) and 4-digit IDs stay.
 - **Ё-fication on ~107,000 word forms** from the [eyo-kernel](https://github.com/e2yo/eyo-kernel) dictionary. Only "safe" forms are replaced — those without a same-spelling homograph that lacks `ё`. So `ребенок → ребёнок`, `учет → учёт`, `шел → шёл`, but `все` stays as is (homograph of the plural of «весь»).
 
