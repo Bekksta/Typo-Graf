@@ -13,6 +13,7 @@ import {
 } from "../lang/maps";
 import { PROCLITICS, UNITS_EN } from "../lib/enLib";
 import { escapeRegex } from "../utils/regexUtils";
+import { groupThousands } from "./shared";
 
 // ===== 1) Праймы: 12'' / 12" → 12″ ; 12' → 12′ =====
 const DOUBLE_PRIME_RE = new RegExp(
@@ -144,15 +145,6 @@ function normalizeRangesEn(text: string): string {
   return text.replace(RANGE_RE, `$1${EN_DASH}$2`);
 }
 
-// Группировка тысяч (5+ цифр) запятой-разделителем — англоязычная норма.
-// Применяется к произвольным числам, не только к валютным префиксам
-// (normalizeLeadingCurrency уже отрабатывает $1234 → $1,234).
-function groupThousandsEn(text: string): string {
-  return text.replace(/\b\d{5,}\b/g, (n) =>
-    n.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-  );
-}
-
 // ===== 6) NBSP после проклитик (артиклей/предлогов/союзов) =====
 // NB: в ТЗ §3.3 явно "Артикли/предлоги НЕ склеиваем NBSP".
 //     В разделе "Готовый функционал" — обратное. Оставлено по факту реализации,
@@ -198,7 +190,9 @@ export function applyEnglishRules(input: string): string {
   t = normalizeEmDashEn(t);
   t = normalizeRangesEn(t);
   t = glueUnitsAndPercentsEn(t);
-  t = groupThousandsEn(t);
+  // Группировка тысяч запятой — англоязычная норма. normalizeLeadingCurrency
+  // уже отрабатывает `$1234 → $1,234`; здесь добиваем произвольные числа.
+  t = groupThousands(t, ",");
   t = glueLatinAbbrs(t);
   t = glueHonorifics(t);
   t = glueProclitics(t);

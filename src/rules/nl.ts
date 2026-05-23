@@ -5,7 +5,7 @@
 // - В нидерландской типографике короткие предлоги/артикли (de, het, een,
 //   van, op, te, in, met) НЕ требуют NBSP — оставляем обычные пробелы.
 import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
-import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG, groupThousands } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 
@@ -29,18 +29,12 @@ function placeDutchQuotes(text: string): string {
   return out;
 }
 
-function groupThousandsNl(text: string): string {
-  return text.replace(/\b\d{5,}\b/g, (n) =>
-    n.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
-  );
-}
-
 export function applyDutchRules(input: string): string {
   let t = input;
   t = placeDutchQuotes(t);
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-  t = groupThousandsNl(t);
+  t = groupThousands(t, NBSP);
   return t;
 }

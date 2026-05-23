@@ -4,7 +4,7 @@
 // - Число + единица/валюта/% → узкий NBSP
 // - Кавычки «…»
 import { NBSP, NNBSP, ANY_SPACE_SRC } from "../lang/maps";
-import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG, groupThousands } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 
@@ -38,13 +38,6 @@ function placeGuillemetsUk(text: string): string {
   return out;
 }
 
-// Группировка тысяч (5+ цифр) узким NBSP: 1234567 → 1 234 567.
-function groupThousandsUk(text: string): string {
-  return text.replace(/\b\d{5,}\b/g, (n) =>
-    n.replace(/\B(?=(\d{3})+(?!\d))/g, NNBSP)
-  );
-}
-
 export function applyUkrainianRules(input: string): string {
   let t = input;
   t = placeGuillemetsUk(t);
@@ -54,6 +47,6 @@ export function applyUkrainianRules(input: string): string {
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NNBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-  t = groupThousandsUk(t);
+  t = groupThousands(t, NNBSP);
   return t;
 }

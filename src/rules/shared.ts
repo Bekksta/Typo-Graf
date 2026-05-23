@@ -1,4 +1,16 @@
 // Общие утилиты и словари для number+unit.
+
+// Группировка тысяч (5+ цифр) переданным разделителем: `1234567` → `1<sep>234<sep>567`.
+// Порог 5 цифр — чтобы не задеть 4-значные года/версии (1991, 1024).
+// Языки используют разные разделители: NBSP (ru/es/it/pl/nl/pt), NNBSP (fr/uk), `,` (en).
+// Немецкий (`.`) не подходит под эту функцию — там нужен стрикт-гард
+// `(?<![\d.,])...(?![\d.,])`, чтобы не задеть `1.0.0` и `3,14`.
+export function groupThousands(text: string, separator: string): string {
+  return text.replace(/\b\d{5,}\b/g, (n) =>
+    n.replace(/\B(?=(\d{3})+(?!\d))/g, separator)
+  );
+}
+
 export function makeNumberUnitRegex(opts: { units?: string[]; currencies?: string[] }) {
   const units = (opts.units ?? []).join("|");
   const curr = (opts.currencies ?? []).join("|");

@@ -9,6 +9,7 @@ import {
 import { NBSP, NBH, ANY_SPACE_CLASS, ANY_SPACE_SRC, EM_DASH, WORD_JOINER } from "../lang/maps";
 import { preserveCase } from "../utils/caseUtils";
 import { escapeRegex } from "../utils/regexUtils";
+import { groupThousands } from "./shared";
 import { applyYoFix } from "./yoPairs";
 
 // 5.1 Проклитики (короткие предлоги/союзы/forward-частицы) → NBSP справа.
@@ -286,15 +287,6 @@ function normalizeAndOr(text: string): string {
   );
 }
 
-// Группировка тысяч в больших числах: 1234567 → 1 234 567 (NBSP-разделитель).
-// Порог — 5 цифр, чтобы не задеть года (1991), версии (1024) и пр. четырёхзначные.
-// Word-boundary защищает от ISBN/SKU-подобных штук с буквами рядом.
-function groupThousandsRu(text: string): string {
-  return text.replace(/\b\d{5,}\b/g, (n) =>
-    n.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
-  );
-}
-
 // Число + квантификаторное сущ. (валюта/время/дата) → NBSP.
 // Список узкий и кураторский (см. QUANTIFIER_NOUNS + MONTHS_RU): только
 // устойчивые количественные классы. «5 рублей», «12 января», «300 минут»
@@ -346,7 +338,7 @@ export function applyRussianRules(
   text = normalizeNegativeMinus(text); // 5.11
   text = normalizeAndOr(text); // 5.12 — «и/или» без пробелов
   text = glueNumQuantifiers(text); // число + валюта/время/месяц → NBSP
-  text = groupThousandsRu(text);
+  text = groupThousands(text, NBSP);
 
   return text;
 }

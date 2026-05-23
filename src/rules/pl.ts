@@ -5,7 +5,7 @@
 // - NBSP перед единицами / валютой (zł, %, €, $)
 // - Десятичная запятая (3,14) не трогается.
 import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
-import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG, groupThousands } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex({
   units: [...(UNITS_BY_LANG.eu.units ?? []), "zł", "gr"],
@@ -39,13 +39,6 @@ function placePolishQuotes(text: string): string {
   return out;
 }
 
-// Группировка тысяч (5+ цифр) NBSP-разделителем (как ru).
-function groupThousandsPl(text: string): string {
-  return text.replace(/\b\d{5,}\b/g, (n) =>
-    n.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
-  );
-}
-
 export function applyPolishRules(input: string): string {
   let t = input;
   t = placePolishQuotes(t);
@@ -53,6 +46,6 @@ export function applyPolishRules(input: string): string {
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-  t = groupThousandsPl(t);
+  t = groupThousands(t, NBSP);
   return t;
 }

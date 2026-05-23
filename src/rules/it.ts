@@ -5,7 +5,7 @@
 // - Сокращения с точкой (Sig., Sig.ra, Sigg., Dott., Dott.ssa, Egr.) → NBSP после
 // - Число + единица/валюта/% → NBSP
 import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
-import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG, groupThousands } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 
@@ -52,13 +52,6 @@ function placeItalianQuotes(text: string): string {
   return out;
 }
 
-// Группировка тысяч (5+ цифр) NBSP-разделителем.
-function groupThousandsIt(text: string): string {
-  return text.replace(/\b\d{5,}\b/g, (n) =>
-    n.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
-  );
-}
-
 export function applyItalianRules(input: string): string {
   let t = input;
   t = placeItalianQuotes(t);
@@ -67,6 +60,6 @@ export function applyItalianRules(input: string): string {
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-  t = groupThousandsIt(t);
+  t = groupThousands(t, NBSP);
   return t;
 }

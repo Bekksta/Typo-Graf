@@ -3,7 +3,7 @@
 // - Гийеметы « … » с узкими NBSP внутри
 // - Число + единица/валюта/% → узкий NBSP
 import { NNBSP, NBSP, ANY_SPACE_SRC, EM_DASH } from "../lang/maps";
-import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG, groupThousands } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 
@@ -79,13 +79,6 @@ function normalizeEmDashFr(text: string): string {
   return text;
 }
 
-// Группировка тысяч (5+ цифр) узким NBSP: 1234567 → 1 234 567.
-function groupThousandsFr(text: string): string {
-  return text.replace(/\b\d{5,}\b/g, (n) =>
-    n.replace(/\B(?=(\d{3})+(?!\d))/g, NNBSP)
-  );
-}
-
 export function applyFrenchRules(input: string): string {
   let t = input;
   t = smartApostropheFr(t);
@@ -96,6 +89,6 @@ export function applyFrenchRules(input: string): string {
   t = glueUnitsFr(t);
   // обычный NBSP в общих правилах уже мог сработать — заменим на NNBSP для FR
   t = t.replace(new RegExp(`(\\d)${NBSP}`, "g"), `$1${NNBSP}`);
-  t = groupThousandsFr(t);
+  t = groupThousands(t, NNBSP);
   return t;
 }

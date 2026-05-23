@@ -3,7 +3,7 @@
 // - Число + единица/валюта/% → NBSP
 // - ¿ ¡ оставляем, пробелы вокруг :;!? искусственно НЕ добавляем
 import { NBSP, ANY_SPACE_SRC, LEFT_DQUOTE, RIGHT_DQUOTE } from "../lang/maps";
-import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG, groupThousands } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex(UNITS_BY_LANG.eu);
 const ASCII_QUOTE_NORMALIZE_RE = /[„‟]/g;
@@ -41,16 +41,10 @@ function pairSpanishQuestionExclamation(text: string): string {
   });
 }
 
-// Группировка тысяч (5+ цифр) NBSP-разделителем. RAE рекомендует
-// неразрывный пробел вместо точки/запятой, чтобы избежать путаницы между
-// форматами es-ES (`1.234.567`) и es-MX/es-419 (`1,234,567`). Без детекта
-// локали NBSP — единственный безопасный выбор: его узнают и в ES, и в LatAm.
-function groupThousandsEs(text: string): string {
-  return text.replace(/\b\d{5,}\b/g, (n) =>
-    n.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
-  );
-}
-
+// Группировка тысяч — NBSP. RAE рекомендует неразрывный пробел вместо
+// точки/запятой, чтобы избежать путаницы между форматами es-ES (`1.234.567`)
+// и es-MX/es-419 (`1,234,567`). Без детекта локали NBSP — единственный
+// безопасный выбор: его узнают и в ES, и в LatAm.
 export function applySpanishRules(input: string): string {
   let t = input;
   t = placeSpanishQuotes(t);
@@ -58,6 +52,6 @@ export function applySpanishRules(input: string): string {
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-  t = groupThousandsEs(t);
+  t = groupThousands(t, NBSP);
   return t;
 }

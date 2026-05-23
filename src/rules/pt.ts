@@ -5,7 +5,7 @@
 // - ¿/¡ не используются; искусственных пробелов вокруг :;!? не добавляем
 // - Десятичная запятая 3,14 не трогается
 import { NBSP, ANY_SPACE_SRC, LEFT_DQUOTE, RIGHT_DQUOTE } from "../lang/maps";
-import { makeNumberUnitRegex, UNITS_BY_LANG } from "./shared";
+import { makeNumberUnitRegex, UNITS_BY_LANG, groupThousands } from "./shared";
 
 const UNIT_RE = makeNumberUnitRegex({
   units: [...(UNITS_BY_LANG.eu.units ?? [])],
@@ -32,21 +32,15 @@ function placePortugueseQuotes(text: string): string {
   return out;
 }
 
-// Группировка тысяч (5+ цифр) NBSP-разделителем.
-// В португальском (особенно PT-PT) разделитель тысяч — точка, но это
-// конфликтует с decimal — оставляем NBSP как безопасный вариант.
-function groupThousandsPt(text: string): string {
-  return text.replace(/\b\d{5,}\b/g, (n) =>
-    n.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP)
-  );
-}
-
+// Группировка тысяч — NBSP. В португальском (особенно PT-PT) разделитель
+// тысяч — точка, но это конфликтует с decimal — оставляем NBSP как
+// безопасный вариант.
 export function applyPortugueseRules(input: string): string {
   let t = input;
   t = placePortugueseQuotes(t);
   t = t.replace(UNIT_RE, (m, n: string) => {
     return n + NBSP + m.slice(n.length).replace(/^\s+/, "");
   });
-  t = groupThousandsPt(t);
+  t = groupThousands(t, NBSP);
   return t;
 }
