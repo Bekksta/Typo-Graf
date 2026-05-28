@@ -80,21 +80,6 @@ function applyMathSubscripts(text: string): string {
   return out;
 }
 
-// ——— меняем дефис на минус, чтоб его не трогал языковой линтер ———
-function protectMathMinus(text: string): string {
-  // латиница, цифры, скобки, над/подстрочные, модифайеры
-  const MOD = "ʰ-˿ᴬ-ᶿ⁰-₟";
-  const L = `[A-Za-z0-9)\\]${MOD}]`;
-  const R = `[A-Za-z0-9(\\[${MOD}]`;
-
-  // Em-dash (U+2014) — это типографическое тире, не математический минус;
-  // исключаем его из диапазона, чтобы не превращать существующие тире в '−'.
-  return text.replace(
-    new RegExp(`(${L})\\s*[\\-\\u2010-\\u2013]\\s*(${R})`, "g"),
-    (m, a, b) => (/[0-9]/.test(a) && /[0-9]/.test(b) ? m : `${a} − ${b}`)
-  );
-}
-
 function applyMathMultiplication(text: string): string {
   let out = text;
 
@@ -295,6 +280,5 @@ export function applyMath(text: string): string {
   out = applyMathSigns(out);
   out = applyMathConstants(out);
   out = applyMathOperators(out);
-  out = protectMathMinus(out);
   return out;
 }

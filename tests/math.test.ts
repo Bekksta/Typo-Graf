@@ -34,9 +34,14 @@ describe("math: multiplication", () => {
     E("mulChain", "a*b*c", "a · b · c"));
 });
 
-describe("math: protect minus does NOT touch em-dash", () => {
+describe("math: hyphen in words stays untouched (no auto math-minus)", () => {
   test("'4 — u' остаётся em-dash, не превращается в '−'", () =>
     E("emDashUntouched", "4 — u", "4 — u"));
+  test("Wi-Fi не ломается", () => E("hyphenWord", "Wi-Fi", "Wi-Fi"));
+  test("e-mail не ломается", () => E("hyphenWord", "e-mail", "e-mail"));
+  test("re-init не ломается", () => E("hyphenWord", "re-init", "re-init"));
+  test("iPhone 12-pro не ломается", () =>
+    E("hyphenWord", "iPhone 12-pro", "iPhone 12-pro"));
 });
 
 describe("math: pi is case-sensitive", () => {
