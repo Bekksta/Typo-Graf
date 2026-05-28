@@ -124,6 +124,17 @@ describe("pipeline: multi-pass convergence", () => {
     E("multiPass", "...   ...", "……"));
 });
 
+describe("pipeline: versions are opaque (NUM_RANGE_RE не ломает semver)", () => {
+  test("v2.0.0-alpha — без изменений", () =>
+    E("verPrefix", "Releasing v2.0.0-alpha now.", "Releasing v2.0.0-alpha now."));
+  test("1.2.3 (semver) — без изменений", () =>
+    E("verSemver", "Version 1.2.3 shipped.", "Version 1.2.3 shipped."));
+  test("0.10-rc1 — без изменений", () =>
+    E("verRc", "tag 0.10-rc1 done", "tag 0.10-rc1 done"));
+  test("1.2.3-rc1 — без изменений", () =>
+    E("verSemverRc", "Tag 1.2.3-rc1 ready.", "Tag 1.2.3-rc1 ready."));
+});
+
 describe("pipeline: trailing newlines stripped, paragraph breaks preserved", () => {
   test("trailing single \\n удаляется", () =>
     E("trailingOne", "текст\n", "текст"));

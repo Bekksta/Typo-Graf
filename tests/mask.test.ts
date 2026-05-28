@@ -69,6 +69,55 @@ describe("mask: emails", () => {
   });
 });
 
+describe("mask: versions (opaque-token защита от NUM_RANGE_RE)", () => {
+  function maskedValues(input: string): string[] {
+    const { masks } = maskSensitive(input);
+    return masks.map((m) => m.value);
+  }
+
+  test("v2.0.0-alpha маскируется целиком", () => {
+    const got = maskedValues("Releasing v2.0.0-alpha now");
+    record(
+      "verV",
+      got.includes("v2.0.0-alpha") ? "pass" : "fail",
+      "Releasing v2.0.0-alpha now",
+      "[v2.0.0-alpha masked]",
+      JSON.stringify(got)
+    );
+    expect(got).toContain("v2.0.0-alpha");
+  });
+
+  test("1.2.3 (semver, 3 parts) маскируется", () => {
+    const got = maskedValues("Version 1.2.3 shipped");
+    expect(got).toContain("1.2.3");
+  });
+
+  test("0.10-rc1 (2 parts + letter suffix) маскируется", () => {
+    const got = maskedValues("tag 0.10-rc1");
+    expect(got).toContain("0.10-rc1");
+  });
+
+  test("1.2.3-rc1 (3+ parts + suffix) маскируется", () => {
+    const got = maskedValues("Tag 1.2.3-rc1");
+    expect(got).toContain("1.2.3-rc1");
+  });
+
+  test("3.14 (decimal) НЕ маскируется", () => {
+    const got = maskedValues("pi ≈ 3.14");
+    expect(got).not.toContain("3.14");
+  });
+
+  test("1.2 (2 parts only) НЕ маскируется", () => {
+    const got = maskedValues("Price 1.2 USD");
+    expect(got).not.toContain("1.2");
+  });
+
+  test("1.2-3 (2 parts + digit-only suffix) НЕ маскируется — ambiguous", () => {
+    const got = maskedValues("range 1.2-3");
+    expect(got).not.toContain("1.2-3");
+  });
+});
+
 describe("mask: multiple", () => {
   test("two URLs get distinct placeholders", () => {
     const input = "a https://aaa.com and https://bbb.com";

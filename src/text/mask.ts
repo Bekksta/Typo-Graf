@@ -14,6 +14,17 @@ const URL_RE =
   /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(\b[a-z][\w+.-]*:\/\/[^\s]+)/gi;
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 
+// Версии: `v2.0.0-alpha`, `1.2.3`, `1.2.3-rc1`, `0.10-rc1`. Без маски
+// `NUM_RANGE_RE` (common.ts) ловит «`2-3`»-подобные части и превращает в
+// en-dash, ломая semver. Три альтернативы:
+//   1) `v\d+(\.\d+)+(-…)?`        — явный префикс v.
+//   2) `\d+(\.\d+){2,}(-…)?`      — 3+ части (1.2.3, 1.2.3.4-rc1).
+//   3) `\d+\.\d+-[A-Za-z]\w*`     — 2 части + letter-starting suffix.
+// `1.2-3` (две части + цифровой хвост) намеренно НЕ маскируется — без
+// контекста неотличим от числового диапазона.
+const VERSION_RE =
+  /\b(?:v\d+(?:\.\d+)+(?:-[\w.]+)?|\d+(?:\.\d+){2,}(?:-[\w.]+)?|\d+\.\d+-[A-Za-z][\w.]*)\b/g;
+
 // Бренды грузим один раз из brands.txt; сортируем по длине (от длинных к
 // коротким), чтобы «Node.js» съел токен раньше, чем правило для «Node».
 const BRANDS = (brandsRaw as string)
@@ -49,6 +60,7 @@ export function maskSensitive(input: string): { masked: string; masks: Mask[] } 
 
   apply(URL_RE);
   apply(EMAIL_RE);
+  apply(VERSION_RE);
   if (BRAND_RE) apply(BRAND_RE);
   return { masked: out, masks };
 }
