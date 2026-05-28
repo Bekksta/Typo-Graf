@@ -4,7 +4,12 @@
 
 import { Language } from "./types";
 
-export type UILocale = Language;
+// UI-локали — подмножество всех поддерживаемых языков. sr-Cyrl исключён:
+// detectUILocale никогда его не возвращает (входящая `sr` маппится в `bcs`),
+// и `MESSAGES_BY_LOCALE` / `LANG_NAMES_BY_LOCALE` его не содержат. Внутренний
+// ключ langNames[uiLocale] остаётся Record<Language, string> — контент-язык
+// (что плагин определяет в тексте) может быть sr-Cyrl.
+export type UILocale = Exclude<Language, "sr-Cyrl">;
 
 const SUPPORTED: UILocale[] = ["ru", "en", "fr", "uk", "de", "es", "bcs", "it", "pl", "pt", "nl"];
 
