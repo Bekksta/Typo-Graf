@@ -124,6 +124,24 @@ describe("pipeline: multi-pass convergence", () => {
     E("multiPass", "...   ...", "……"));
 });
 
+describe("pipeline: composite units (Мбит/с не превращается в Мбит / с)", () => {
+  // WJ (U+2060) оборачивает `/` — невидим визуально, блокирует UAX#14 break
+  // и одновременно регекс applyMathDivision (он матчит `[symbol]/[symbol]`,
+  // WJ в его «символьный» класс не входит). NBSP перед единицей ставится
+  // только если ПРЕФИКС единицы есть в COMMON_UNITS_RE (Мбит, км...). Для
+  // `об`/`кадр` префикс не в списке — там просто пробел, а не NBSP. Это
+  // отдельный концерн от защиты `/`; см. TODO.md.
+  const WJ = "⁠";
+  test("100 Мбит/с — `/` обёрнут WJ, NBSP перед (Мбит в COMMON_UNITS_RE)", () =>
+    E("compUnitMbits", "Скорость 100 Мбит/с стабильна.", `Скорость 100${NBSP}Мбит${WJ}/${WJ}с стабильна.`));
+  test("60 км/ч — `/` обёрнут WJ, NBSP перед (км в COMMON_UNITS_RE)", () =>
+    E("compUnitKmh", "Едет 60 км/ч.", `Едет 60${NBSP}км${WJ}/${WJ}ч.`));
+  test("3000 об/мин — `/` обёрнут WJ (без NBSP, об нет в COMMON_UNITS_RE)", () =>
+    E("compUnitRpm", "Двигатель 3000 об/мин.", `Двигатель 3000 об${WJ}/${WJ}мин.`));
+  test("60 кадр/с — `/` обёрнут WJ (без NBSP, кадр нет в COMMON_UNITS_RE)", () =>
+    E("compUnitFps", "Снимаем 60 кадр/с.", `Снимаем 60 кадр${WJ}/${WJ}с.`));
+});
+
 describe("pipeline: versions are opaque (NUM_RANGE_RE не ломает semver)", () => {
   test("v2.0.0-alpha — без изменений", () =>
     E("verPrefix", "Releasing v2.0.0-alpha now.", "Releasing v2.0.0-alpha now."));

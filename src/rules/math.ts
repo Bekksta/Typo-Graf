@@ -1,6 +1,30 @@
 import { SUPER_MAP, SUB_MAP, GREEK_MAP } from "../lib/mathLib";
+import { COMPOSITE_UNITS } from "../lib/unitsLib";
+import { WORD_JOINER } from "../lang/maps";
+import { escapeRegex } from "../utils/regexUtils";
 
 const asciiMinusToUnicode = (s: string) => s.replace(/-/g, "−");
+
+// Защита составных единиц со слэшем (`Мбит/с`, `км/ч`, `кадр/с`...) от
+// `applyMathDivision`, которое иначе вставляет пробелы вокруг `/`. Идея —
+// обернуть `/` в WORD_JOINER (U+2060, zero-width), и регексы math не
+// сматчат: символ WORD_JOINER не входит в их «символьные» классы.
+// Цифровой контекст слева (lookbehind) — фильтр от ложных матчей вне
+// числовых выражений («скорость Мбит/с» без числа не трогаем).
+const COMPOSITE_UNITS_SORTED = [...COMPOSITE_UNITS].sort(
+  (a, b) => b.length - a.length
+);
+const COMPOSITE_UNITS_RE = new RegExp(
+  `(?<=\\d[ \\u00A0\\u2009\\u202F\\t]*)(?:${COMPOSITE_UNITS_SORTED.map(
+    escapeRegex
+  ).join("|")})(?![\\p{L}\\p{N}])`,
+  "gu"
+);
+function protectCompositeUnits(text: string): string {
+  return text.replace(COMPOSITE_UNITS_RE, (m) =>
+    m.replace(/\//g, `${WORD_JOINER}/${WORD_JOINER}`)
+  );
+}
 
 const toSuperscriptAll = (s: string) =>
   s
@@ -272,7 +296,8 @@ function applyMathOperators(text: string): string {
 
 // ——— единая точка входа ———
 export function applyMath(text: string): string {
-  let out = applyMathPowers(text);
+  let out = protectCompositeUnits(text);
+  out = applyMathPowers(out);
   out = applyMathSubscripts(out);
   out = applyMathMultiplication(out);
   out = applyMathDivision(out);
