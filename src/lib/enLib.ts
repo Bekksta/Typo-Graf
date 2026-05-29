@@ -1,22 +1,25 @@
 // PROCLITICS — слова, тянущие к себе следующее слово. NBSP справа.
+// Регистр учитывается явно: lowercase + Title-case (без ALL-CAPS — там
+// чаще встречается аббревиатура «AN» как имя/инициалы, а не артикль).
+// Раньше регекс ходил с флагом `gi`, который ловил `A`/`I` посреди матики
+// (`a · b`, `A → B`), см. smoke-test v1.0.0 bug #3.
 export const PROCLITICS = [
-  "a",
-  "an",
-  "the",
-  "and",
-  "but",
-  "or",
-  "nor",
-  "so",
-  "as",
-  "at",
-  "by",
-  "in",
-  "of",
-  "on",
-  "to",
-  "i",
-  "I",
+  "a", "A",
+  "an", "An",
+  "the", "The",
+  "and", "And",
+  "but", "But",
+  "or", "Or",
+  "nor", "Nor",
+  "so", "So",
+  "as", "As",
+  "at", "At",
+  "by", "By",
+  "in", "In",
+  "of", "Of",
+  "on", "On",
+  "to", "To",
+  "i", "I",
 ];
 
 export const UNITS_EN = [

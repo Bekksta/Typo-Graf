@@ -100,4 +100,24 @@ describe("en: service words glue with NBSP", () => {
     E("serviceWords", "the cat", `the${NBSP}cat`));
   test("of London", () =>
     E("serviceWords", "of London", `of${NBSP}London`));
+
+  // Title-case forms должны клеиться (smoke-test v1.0.0 bug #3 — после
+  // снятия флага `i` мы явно перечислили оба регистра).
+  test("A dog (Title-case)", () =>
+    E("serviceWords", "A dog", `A${NBSP}dog`));
+  test("The cat (Title-case)", () =>
+    E("serviceWords", "The cat", `The${NBSP}cat`));
+});
+
+describe("en: single-letter Latin variables in math are NOT mangled", () => {
+  // smoke-test v1.0.0 bug #3: `a · b` и `A → B` раньше получали NBSP
+  // справа от одиночной буквы, потому что флаг `i` ловил её как артикль.
+  // Lookahead-класс теперь сужен до букв/цифр/smart-quotes — `·`/`→`/`—`
+  // в него не попадают, склейки не происходит.
+  test("a · b stays clean", () =>
+    E("mathLetters", "a · b", "a · b"));
+  test("A → B stays clean", () =>
+    E("mathLetters", "A → B", "A → B"));
+  test("the cat (normal phrase) still glues", () =>
+    E("mathLetters", "I see a · b", `I${NBSP}see a · b`));
 });
