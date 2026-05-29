@@ -54,18 +54,21 @@ describe("en: currency", () => {
 });
 
 describe("en: latin abbreviations e.g./i.e./etc./vs./cf.", () => {
-  test("e.g. → e.NBSPg.NBSPfoo", () =>
-    E("eg", "e.g. for example", `e.${NBSP}g.${NBSP}for example`));
-  test("i.e. → i.NBSPe.NBSPfoo", () =>
-    E("ie", "i.e. specifically", `i.${NBSP}e.${NBSP}specifically`));
+  // CMS / Garner's style: `e.g.`, `i.e.` пишутся слитно (smoke-test v1.0.0 §5).
+  test("e.g. остаётся слитным, NBSP только перед следующим словом", () =>
+    E("eg", "e.g. for example", `e.g.${NBSP}for example`));
+  test("e. g. (с внутренним пробелом) → e.g. + NBSP перед next", () =>
+    E("eg", "e. g. for example", `e.g.${NBSP}for example`));
+  test("i.e. остаётся слитным, NBSP только перед следующим словом", () =>
+    E("ie", "i.e. specifically", `i.e.${NBSP}specifically`));
   test("etc. → etc.NBSPnext", () =>
     E("etc", "lemons, oranges etc. today", `lemons, oranges etc.${NBSP}today`));
   test("vs. → vs.NBSPnext", () =>
     E("vs", "Tom vs. Jerry", `Tom vs.${NBSP}Jerry`));
   test("cf. → cf.NBSPnext", () =>
     E("cf", "see cf. Smith 1999", `see cf.${NBSP}Smith 1999`));
-  test("e.g., с запятой — запятая прилипает", () =>
-    E("egComma", "e.g., apples and pears", `e.${NBSP}g., apples and${NBSP}pears`));
+  test("e.g., с запятой — запятая прилипает (CMS-style)", () =>
+    E("egComma", "e.g., apples and pears", `e.g., apples and${NBSP}pears`));
 });
 
 describe("en: thousands grouping (общая, не только валютная)", () => {
