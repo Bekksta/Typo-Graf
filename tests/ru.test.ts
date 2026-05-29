@@ -34,6 +34,18 @@ describe("ru: short prepositions glue with NBSP", () => {
     E("shortPreps", "и в почте", `и${NBSP}в${NBSP}почте`));
   test("у и я (single-letter proclitics + я)", () =>
     E("shortPreps", "у и я документа", `у${NBSP}и${NBSP}я${NBSP}документа`));
+
+  // Проклитика перед типографским знаком (smoke-test v1.0.0 bug #1).
+  // До расширения lookahead-класса №/§/©/®/™/$/€/£/¥/₽/− считались
+  // «не словом» и проклитика не цеплялась.
+  test("по № 5 (proclitic + numero sign)", () =>
+    E("shortPreps", "по № 5", `по${NBSP}№${NBSP}5`));
+  test("до § 104 (proclitic + section sign)", () =>
+    E("shortPreps", "до § 104", `до${NBSP}§${NBSP}104`));
+  test("на © 2026 (proclitic + copyright)", () =>
+    E("shortPreps", "на © 2026", `на${NBSP}© 2026`));
+  test("за $ 100 (proclitic + currency)", () =>
+    E("shortPreps", "за $ 100", `за${NBSP}$ 100`));
 });
 
 describe("ru: smart quotes («»)", () => {
