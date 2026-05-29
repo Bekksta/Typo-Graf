@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-05-29
+
+Pre-release smoke-test pass (see [`docs/smoke-test-v1.0.0.md`](docs/smoke-test-v1.0.0.md) for full audit).
+
+### Fixed
+- **Russian.** Consecutive proclitics (`и в почте`) — only the first was getting NBSP because the matching boundary character was being consumed; now both get NBSP via lookbehind (`и<NBSP>в<NBSP>почте`).
+- **Russian.** Proclitics now glue before typographic symbols `№ § © ® ™ ¢ £ ¥ € ₽ $ −` (lookahead extended). Previously `по № 5` stayed with a regular space; now becomes `по<NBSP>№<NBSP>5`.
+- **English.** Single-letter Latin variables in math contexts (`a · b`, `A → B`, `I — that`) are no longer mistakenly glued as articles. The proclitic lookahead was tightened from any non-whitespace to letters/digits/smart-quote-opening, and the case-insensitive flag was dropped (Title-case forms are listed explicitly).
+- **English.** As a symmetric side-effect: `the iPhone` no longer adds NBSP between `the` and the masked brand — same behavior as Russian.
+- **Serbian Cyrillic.** Closing quotation mark switched from U+201D (`"`, English right double) to U+201C (`"`, left double — the canonical mirror partner of `„` per *Pravopis srpskog jezika*).
+
+### Changed
+- **English (potentially breaking).** Latin abbreviations `e.g.` and `i.e.` are now Chicago Manual / Garner's-style: written solid as `e.g.`, `i.e.` (no internal NBSP) with NBSP only before the following word. Previous behavior was German-style `e. g.` (NBSP inside). If you have v1.0.0 layouts in Figma with `e. g.`, running the plugin again will normalize them to `e.g.`.
+
+### Docs
+- Russian proclitic list in [`docs/typography-rules.md`](docs/typography-rules.md) §2.2 synced with [`src/lib/ruLib.ts`](src/lib/ruLib.ts) (added `перед, меж, то, как, чтоб, чтобы, зато, однако, мол, дескать, там, тут, так, где, ну`).
+- `г-н Иванов` example in §2.2 corrected (was using `<NBH>` tag, code does `<NBSP>`).
+- Multi-space collapsing (`/ {2,}/g`) added to common rules in §2.1.
+- §2.9 clarified: brand names are masked **before** detect (not only URL/email) — otherwise brand-heavy Russian text could be misdetected as Portuguese.
+- New `docs/smoke-test-v1.0.0.md` — full bug-by-bug audit with Figma-board sources and verification scripts.
+
 ## [1.0.0] — 2026-05-28
 
 First public release.
@@ -73,4 +94,5 @@ First public release.
 - Selection works at node level, not at individual characters inside a node.
 - Mixed-script text uses rules of the dominant script; on very short ambiguous strings detection is best-effort.
 
+[1.0.1]: https://github.com/Bekksta/Typo-Graf/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Bekksta/Typo-Graf/releases/tag/v1.0.0
