@@ -9,17 +9,19 @@
 import { applyRussianRules } from "./ru";
 import { NBSP, ANY_SPACE_SRC } from "../lang/maps";
 
-// Заменяем ёлочки «…», поставленные ru-обработчиком, на „…" (открывающая
-// нижняя, закрывающая верхняя — стандартная сербская типографика).
+// Заменяем ёлочки «…», поставленные ru-обработчиком, на „…“ (открывающая
+// нижняя U+201E, закрывающая верхняя U+201C — стандартная сербская
+// типографика по Pravopis srpskog jezika; до smoke-test v1.0.0 bug #4
+// закрывающая была U+201D, английская правая, ориентированная наружу).
 // Делается ПОСЛЕ ru-rules, чтобы не дублировать всю их логику.
 function replaceQuotesWithSrStyle(text: string): string {
-  // «X» → „X"
+  // «X» → „X“
   // Чередуем только то, что уже расставлено как «»; ASCII кавычки уже
   // нормализованы внутри smartQuotesRu.
   let out = "";
   for (const ch of text) {
     if (ch === "«") out += "„";
-    else if (ch === "»") out += "”";
+    else if (ch === "»") out += "“";
     else out += ch;
   }
   return out;

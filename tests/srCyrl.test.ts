@@ -9,9 +9,12 @@ function E(rule: string, input: string, expected: string): void {
   expectTransform(M, rule, input, expected, applySerbianCyrillicRules);
 }
 
-describe('sr-Cyrl: quotes „…"', () => {
-  test('"здраво" → „здраво"', () =>
-    E("quotes", '"здраво"', "„здраво”"));
+describe('sr-Cyrl: quotes „…“', () => {
+  // Standard Serbian Cyrillic per Pravopis srpskog jezika: opening
+  // U+201E („), closing U+201C (“). До smoke-test v1.0.0 bug #4
+  // закрывающая была U+201D, английская правая, ориентированная наружу.
+  test('"здраво" → „здраво“', () =>
+    E("quotes", '"здраво"', "„здраво“"));
 });
 
 describe("sr-Cyrl: NBSP before unit (как ru)", () => {
