@@ -15,14 +15,18 @@ import { applyYoFix } from "./yoPairs";
 // 5.1 Проклитики (короткие предлоги/союзы/forward-частицы) → NBSP справа.
 // Парная функция — `glueParticles` ниже (энклитики `бы/ли/же/ль`, NBSP слева).
 // Пересечение списков запрещено: слово либо тянет вправо, либо влево.
+// Левый якорь — lookbehind, а не захватывающая группа: иначе подряд идущие
+// проклитики (`и в почте`) триггерят только первый матч — `lastIndex`
+// сканера съедает граничный пробел, и второй проклитике («в») просто не
+// перед чем стоять. Lookbehind не «потребляет» границу.
 const PROCLITICS_RE = new RegExp(
-  `(^|[\\s(>])(${PROCLITICS.join(
+  `(?<=^|[\\s(>])(${PROCLITICS.join(
     "|"
   )})(?:${ANY_SPACE_SRC})(?=[A-Za-z\u0410-\u042F\u0430-\u044F\u0401\u04510-9\xAB])`,
   "gmi"
 );
 function glueProclitics(text: string): string {
-  return text.replace(PROCLITICS_RE, (_m, pre, w) => pre + w + NBSP);
+  return text.replace(PROCLITICS_RE, (_m, w) => w + NBSP);
 }
 
 // 5.2 Инициалы

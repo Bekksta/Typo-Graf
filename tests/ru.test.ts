@@ -25,6 +25,15 @@ describe("ru: short prepositions glue with NBSP", () => {
   test("к окну", () => E("shortPreps", "к окну", `к${NBSP}окну`));
   test("по плану", () =>
     E("shortPreps", "по плану", `по${NBSP}плану`));
+
+  // Подряд идущие проклитики — обе должны получить NBSP. До lookbehind-фикса
+  // (smoke-test v1.0.0 bug #2) первая проклитика «съедала» граничный пробел и
+  // вторая просто не находилась — результат был `и<NBSP>в почте` вместо
+  // `и<NBSP>в<NBSP>почте`.
+  test("и в почте (two proclitics in a row)", () =>
+    E("shortPreps", "и в почте", `и${NBSP}в${NBSP}почте`));
+  test("у и я (single-letter proclitics + я)", () =>
+    E("shortPreps", "у и я документа", `у${NBSP}и${NBSP}я${NBSP}документа`));
 });
 
 describe("ru: smart quotes («»)", () => {
