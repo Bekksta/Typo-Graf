@@ -38,7 +38,13 @@ function smartQuotesEn(input: string): string {
   // Word-end apostrophe: для 'lovers'' '\b' после '\'' не срабатывает,
   // т.к. оба — non-word. Используем явный lookahead "не буква".
   text = text.replace(/([A-Za-z])'(?![A-Za-z])/g, `$1${RIGHT_SQUOTE}`);
-  text = text.replace(/(?<![A-Za-z])'([A-Za-z]+)\b/g, `${RIGHT_SQUOTE}$1`);
+  // Открывающая одиночная кавычка: пробел/начало строки + `'` + буква →
+  // `‘` (LEFT). До smoke-test v1.0.2 #L6 здесь ставился `’` (RIGHT) — в итоге
+  // `'I said'` → `’I said'` (открывающая «правая», закрывающая вообще нетронута).
+  text = text.replace(/(?<![A-Za-z])'([A-Za-z]+)\b/g, `${LEFT_SQUOTE}$1`);
+  // Закрывающая одиночная кавычка после пунктуации (`inches.'`, `said,'`).
+  // Не покрывается line 40 (там нужен letter сразу перед `'`).
+  text = text.replace(/(?<=[.,!?;:])'(?![A-Za-z])/g, RIGHT_SQUOTE);
 
   // Парные двойные кавычки “…”
   let out = "";

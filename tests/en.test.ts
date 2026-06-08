@@ -24,6 +24,24 @@ describe("en: apostrophes", () => {
     E("apostrophes", "lovers'", "lovers’"));
 });
 
+describe("en: single quotes (paired ‘…’)", () => {
+  // Smoke-test v1.0.2 #L6: открывающая получала `’` (правую) вместо `‘` (левой),
+  // закрывающая после пунктуации (`inches.'`) вообще не транслировалась.
+  // В expected учтены NBSP от EN-проклитик (I, in, and).
+  test("opening 'I → ‘I (left curly)", () =>
+    E(
+      "singleQuoteOpen",
+      "He said 'I see' yesterday.",
+      `He said ‘I${NBSP}see’ yesterday.`
+    ));
+  test("'I measured…inches.' → ‘I measured…inches.’", () =>
+    E(
+      "singleQuotePair",
+      "'I measured everything in feet and inches.'",
+      `‘I${NBSP}measured everything in${NBSP}feet and${NBSP}inches.’`
+    ));
+});
+
 describe("en: primes", () => {
   test("12'' → 12″", () => E("doublePrime", "12''", "12″"));
   test("12' → 12′", () => E("singlePrime", "12'", "12′"));
