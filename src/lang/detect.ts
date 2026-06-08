@@ -41,7 +41,12 @@ const SOFT_WORD_RULES: Array<{ lang: Language; re: RegExp }> = [
   { lang: "de", re: /(?<![\p{L}\p{N}])(der|die|das|und|nicht|ich|sein|wird|durch|zwischen|über|für|mit|eine|einen|sie|auch|aber|nach|sind|haben|werden)(?![\p{L}\p{N}])/giu },
   { lang: "es", re: /(?<![\p{L}\p{N}])(el|los|las|una|también|español|hacer|para|por|con|pero|esto|esta|está|este|son|del|muy|qué|cómo|dónde|cuándo|aquí|allá|después|señor)(?![\p{L}\p{N}])/giu },
   { lang: "fr", re: /(?<![\p{L}\p{N}])(le|la|les|dans|pour|sans|avec|vous|peut|leur|leurs|être|faire|c'est|qu'on|qui|nous|une|sont|sont)(?![\p{L}\p{N}])/giu },
-  { lang: "it", re: /(?<![\p{L}\p{N}])(che|gli|perché|però|della|sono|molto|quando|ancora|anche|sulla|nella|questo|questa|hanno)(?![\p{L}\p{N}])/giu },
+  // IT — добавляем глаголы на -iamo (1-е лицо мн.ч. настоящего, уникально
+  // итальянские) и обращения Dott./Sig./Egr., которые часто встречаются в
+  // деловом IT. Без этого расширения тексты типа `Il Dott. Rossi e il Sig.…`
+  // или `Abbiamo lanciato un servizio…` проигрывали fr на словах `la/le/qui`
+  // (smoke-test v1.0.2 #L7).
+  { lang: "it", re: /(?<![\p{L}\p{N}])(che|gli|perché|però|della|sono|molto|quando|ancora|anche|sulla|nella|questo|questa|hanno|abbiamo|siamo|andiamo|vediamo|sappiamo|oppure|dunque|tuttavia|disse|tutti|tutta|tutto|tutte|Dott|Sig|Egr)(?![\p{L}\p{N}])/giu },
   { lang: "pl", re: /(?<![\p{L}\p{N}])(jest|się|nie|że|ale|też|tylko|jak|ten|ta|jako|które|który|która|przez)(?![\p{L}\p{N}])/giu },
   { lang: "pt", re: /(?<![\p{L}\p{N}])(não|são|em|com|fazer|então|está|estão|para|porque|mas|isso|isto|este|esta)(?![\p{L}\p{N}])/giu },
   { lang: "nl", re: /(?<![\p{L}\p{N}])(het|een|van|zijn|niet|maar|onze|wij|deze|naar|over|door|tussen|veel)(?![\p{L}\p{N}])/giu },

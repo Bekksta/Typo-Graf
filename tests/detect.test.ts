@@ -79,6 +79,20 @@ describe("detect: word-list scoring catches ambiguous cases", () => {
     expectLang("deWords", "der Mann und die Frau", "de"));
   test("'jest się że' — pl", () =>
     expectLang("plWords", "to jest tylko ten przykład", "pl"));
+  // Smoke-test v1.0.2 #L7: эти кейсы раньше отдавались fr/es, потому что
+  // `la`/`le` (fr) и `el`/`son` (es) перевешивали единственное IT-слово `sono`.
+  test("italian 'Abbiamo lanciato' (verb -iamo) — это it (не fr)", () =>
+    expectLang(
+      "itAbbiamo",
+      "Abbiamo lanciato un nuovo servizio per la casa intelligente. Tutti i diritti riservati.",
+      "it"
+    ));
+  test("italian 'Il Dott./Sig.' (honorifics) — это it (не fr)", () =>
+    expectLang(
+      "itHonorifics",
+      "Il Dott. Rossi e il Sig. Bianchi aprirono un piccolo museo.",
+      "it"
+    ));
 });
 
 describe("detect: mixed scripts — dominant wins", () => {
