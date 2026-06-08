@@ -20,6 +20,17 @@ describe("common: ellipsis", () => {
   test("ellipsis adds space before letter/digit", () =>
     E("ellipsis", "abc…def", "abc… def"));
   test("idempotent on real ellipsis", () => E("ellipsis", "уже…", "уже…"));
+
+  // Раньше compact-rule съедал пробел перед `"`/`«`/`(` после `...`, и output
+  // склеивался: `слово... "цитата"` → `слово…"цитата"` (smoke-test v1.0.2 #L1).
+  test("ellipsis adds space before opening double quote (en)", () =>
+    E("ellipsis", `слово... "цитата"`, `слово… "цитата"`));
+  test("ellipsis adds space before opening guillemet (ru/fr)", () =>
+    E("ellipsis", "слово... «цитата»", "слово… «цитата»"));
+  test("ellipsis adds space before German low-9 quote (de/sr)", () =>
+    E("ellipsis", "Wort... „Zitat“", "Wort… „Zitat“"));
+  test("ellipsis adds space before opening paren", () =>
+    E("ellipsis", "и так далее...(см. ниже)", "и так далее… (см. ниже)"));
 });
 
 describe("common: percent", () => {

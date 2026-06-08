@@ -74,7 +74,13 @@ const DEG_RE = /\b(\d+)\s*deg\b/gi;
 
 const ELLIPSIS_COMPACT_RE = /\s*\.{3}\s*/g;
 const ELLIPSIS_TRIM_LEFT_RE = /\s+…/g;
-const ELLIPSIS_SPACE_RIGHT_RE = /…(?=[A-Za-zА-Яа-яЁё0-9])/g;
+// После `…` пробел нужен не только перед буквой/цифрой, но и перед открывающей
+// кавычкой/скобкой. Покрываем и Unicode-кавычки (`“ ‘ « „`), и ASCII (`" '`) —
+// common-rule идёт раньше smart-quotes, поэтому в исходнике может быть и тот, и
+// другой вариант. Без этого compact-rule выше съест пробел в `… "When` →
+// `…"When`, и smart-quotes склеит многоточие с кавычкой
+// (smoke-test v1.0.2 bug #L1).
+const ELLIPSIS_SPACE_RIGHT_RE = /…(?=[A-Za-zА-Яа-яЁё0-9“‘«„("'(])/g;
 const PERCENT_ELLIPSIS_RE = /%\s*…/g;
 const NUM_RANGE_RE = /(\d+)\s*-\s*(\d+)/g;
 const DOUBLE_SP_RE = / {2,}/g;
