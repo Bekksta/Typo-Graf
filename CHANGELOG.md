@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] — 2026-06-08
+
+Second smoke-test pass on long «landing-style» texts (canvas 166:2 in the Figma project). See [`docs/smoke-test-v1.0.2.md`](docs/smoke-test-v1.0.2.md) for the full audit; 7 issues fixed below.
+
+### Fixed
+- **Common (all languages).** Space between `…` and an opening quotation mark / parenthesis was being eaten by the ellipsis compact-rule — `слово… "цитата"` collapsed to `слово…"цитата"`. The `ELLIPSIS_SPACE_RIGHT_RE` lookahead now also covers `" ' « „ “ ‘ (`, so the inter-word space is restored.
+- **Common (all languages).** `-2 °C`, `-15 %`, `-300 ₽` and similar minus-prefixed numbers now correctly get NBSP between the signed number and the unit. The capture group in `COMMON_UNITS_RE` was widened from `\d+` to `[-−]?\d+`. `°C`, `°F`, `°` added to the common units alternation (they were not in any per-language list and slipped through).
+- **Russian / Serbian Cyrillic.** `60 км/ч. Все права…` no longer glues `ч.` to the next word. The unit-abbreviation rule now recognises that an abbreviation preceded by `/` or word-joiner is part of a composite unit (`км<WJ>/<WJ>ч.`), not a standalone abbreviation.
+- **Ukrainian.** Composite units `Мбіт/с`, `Кбіт/с`, `Гбіт/с`, `Мбіт/сек`, `Кбіт/сек`, `Гбіт/сек`, `км/год` are now protected from `applyMathDivision` (which would otherwise insert spaces around `/`). Previously only the Russian and Latin spellings (`Мбит/с`, `Mbit/s`, `км/ч`, `km/h`) were in the dictionary.
+- **BCS (Bosnian / Croatian / Serbian Latin).** Thousands grouping with NBSP was not applied (`1234567` stayed solid). `applyBCSRules` now calls `groupThousands(t, NBSP)` after quotes and unit-NBSP.
+- **English.** Single quotation marks: opening `'I` now becomes `‘I` (left curly U+2018) instead of `’I` (right curly U+2019); closing `inches.'` now becomes `inches.’` instead of staying ASCII `'`. Apostrophe-inside-word and word-end behaviours unchanged.
+- **Language detection.** Italian texts without unique markers (`ò`, `ì`) used to lose to French or Spanish on shared diacritics. Added Italian-specific markers: `-iamo` verbs (`abbiamo, siamo, andiamo, vediamo, sappiamo`), connectives (`oppure, dunque, tuttavia, disse, tutti/a/o/e`) and business honorifics (`Dott`, `Sig`, `Egr`).
+
+### Docs
+- New [`docs/smoke-test-v1.0.2.md`](docs/smoke-test-v1.0.2.md) — landing-text audit with codepoint-level diffs and per-bug source-pointers.
+- Russian-quotation note in §2.2 corrected: punctuation (`.`, `,`, `…`) stays outside the closing guillemet, per Розенталь, not inside — the previous wording contradicted both the cited source and the actual implementation.
+
 ## [1.0.1] — 2026-05-29
 
 Pre-release smoke-test pass (see [`docs/smoke-test-v1.0.0.md`](docs/smoke-test-v1.0.0.md) for full audit).
