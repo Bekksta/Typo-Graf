@@ -73,6 +73,25 @@ describe("ru: composite abbreviations (т. д., и т. п., н. э.)", () => {
     E("compositeAbbr", "до н.э.", `до${NBSP}н.${NBSP}э.`));
 });
 
+describe("ru: unit-abbr внутри композитной единицы не клеится к next word", () => {
+  // Smoke-test v1.0.2 #L3: `км/ч.` после applyMath → `км<WJ>/<WJ>ч.`. Раньше
+  // `ч.` распознавался как сокращение «час» и приклеивал next word через NBSP.
+  // Тестируем applyRussianRules напрямую — на входе уже WJ-wrap из math.
+  const WJ = "⁠"; // U+2060
+  test("60 км<WJ>/<WJ>ч. — ч. не клеит next", () =>
+    E(
+      "compositeUnitAbbr",
+      `60${NBSP}км${WJ}/${WJ}ч. Все права`,
+      `60${NBSP}км${WJ}/${WJ}ч. Все права`
+    ));
+  test("100 Мбит<WJ>/<WJ>с. — с. не клеит next", () =>
+    E(
+      "compositeUnitAbbr",
+      `100${NBSP}Мбит${WJ}/${WJ}с. Все`,
+      `100${NBSP}Мбит${WJ}/${WJ}с. Все`
+    ));
+});
+
 describe("ru: № and §", () => {
   test("№ 8 → №NBSP8", () => E("noSign", "№ 8", `№${NBSP}8`));
   test("§ 104 → §NBSP104", () =>

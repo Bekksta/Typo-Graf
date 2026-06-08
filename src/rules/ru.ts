@@ -124,10 +124,17 @@ function glueAfterAbbr(text: string): string {
       const abbr = (unit || generic) as string;
       // PREV non-space char: если слева цифра, аббревиатура замыкает число
       // («1991 г.», «5 кг.») — NBSP справа не нужен.
+      // Аналогично — если слева `/` или WJ (U+2060): аббревиатура часть
+      // композитной единицы (`км/ч.` после applyMath: `км<WJ>/<WJ>ч.`).
+      // Без этой проверки `60 км/ч. Все права…` склеивает `ч.` со следующим
+      // словом через NBSP (smoke-test v1.0.2 #L3).
       let pi = off - 1;
       while (pi >= 0 && ANY_SPACE_CLASS.test(out[pi])) pi--;
       const prev = pi >= 0 ? out[pi] : "";
-      if (unit && /\d/.test(prev)) {
+      if (
+        unit &&
+        (/\d/.test(prev) || prev === "/" || prev === "\u2060")
+      ) {
         return m.replace(/\u00A0/g, " ");
       }
       // Хвост composite («и т. д.», «т. е.», «до н. э.»): если матч —
