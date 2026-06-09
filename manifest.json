@@ -1,11 +1,12 @@
 {
   "name": "Typo Graf",
-  "id": "typo-graf",
+  "id": "1645822442717786834",
   "api": "1.0.0",
   "main": "dist/main.js",
   "ui": "dist/ui.html",
   "editorType": ["figma"],
   "networkAccess": { "allowedDomains": ["none"] },
   "capabilities": [],
-  "permissions": []
+  "permissions": [],
+  "documentAccess": "dynamic-page"
 }

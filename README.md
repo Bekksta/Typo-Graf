@@ -2,6 +2,8 @@
 
 **English** · [Русский](README.ru.md)
 
+**[→ Install from Figma Community](https://www.figma.com/community/plugin/1645822442717786834)**
+
 A Figma plugin that brings layout text to typographic standards — places non-breaking spaces, smart quotes, dashes, superscripts, units, fixes apostrophes and Russian `ё`-fication. Eleven languages, URL/email/brand protection, style preservation, offline.
 
 ## Why it
